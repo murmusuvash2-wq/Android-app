@@ -30,7 +30,10 @@ import coil.request.ImageRequest
 import com.example.ui.theme.*
 
 @Composable
-fun MeScreen(navController: NavController) {
+fun MeScreen(
+    navController: NavController,
+    onNavigateToLooks: (LooksTab) -> Unit = {}
+) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     var priceDropEnabled by remember { mutableStateOf(true) }
@@ -51,7 +54,7 @@ fun MeScreen(navController: NavController) {
                         showAccountPrompt = false
                         navController.navigate(Screen.Onboarding.route) { popUpTo(0) }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Lavender, contentColor = Color.White)
+                    colors = ButtonDefaults.buttonColors(containerColor = Charcoal, contentColor = Color.White)
                 ) {
                     Text("Create Account")
                 }
@@ -72,7 +75,7 @@ fun MeScreen(navController: NavController) {
             .fillMaxSize()
             .background(WarmIvory)
             .verticalScroll(scrollState)
-            .padding(top = 32.dp, bottom = 100.dp)
+            .padding(top = 32.dp, bottom = SpacingXl)
     ) {
         // 1. HEADER
         Row(
@@ -104,7 +107,7 @@ fun MeScreen(navController: NavController) {
                         Icon(
                             imageVector = Icons.Default.AutoAwesome,
                             contentDescription = "Credits",
-                            tint = Lavender,
+                            tint = ChampagneGold,
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
@@ -145,7 +148,7 @@ fun MeScreen(navController: NavController) {
                     Text(
                         text = "Create Account",
                         fontSize = 14.sp,
-                        color = Lavender,
+                        color = DeepForest,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.clickable {
                             navController.navigate(Screen.Onboarding.route) {
@@ -184,7 +187,7 @@ fun MeScreen(navController: NavController) {
                     Text(
                         text = "Edit Profile",
                         fontSize = 13.sp,
-                        color = Lavender,
+                        color = DeepForest,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.clickable {
                             Toast.makeText(context, "Edit profile settings", Toast.LENGTH_SHORT).show()
@@ -202,7 +205,7 @@ fun MeScreen(navController: NavController) {
         ) {
             Text(
                 text = "MY TRY-ON PHOTOS",
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp,
                 color = SoftCharcoal,
@@ -289,7 +292,7 @@ fun MeScreen(navController: NavController) {
         ) {
             Text(
                 text = "YOUR ACTIVITY",
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp,
                 color = SoftCharcoal,
@@ -304,14 +307,14 @@ fun MeScreen(navController: NavController) {
                 SimpleRow(
                     title = "Saved Looks",
                     onClick = {
-                        if (SessionManager.isGuest) showAccountPrompt = true else navController.navigate(Screen.Looks.route)
+                        if (SessionManager.isGuest) showAccountPrompt = true else onNavigateToLooks(LooksTab.RECENT)
                     }
                 )
                 HorizontalDivider(color = WarmGray, modifier = Modifier.padding(horizontal = 16.dp))
                 SimpleRow(
                     title = "Price Tracking",
                     onClick = {
-                        if (SessionManager.isGuest) showAccountPrompt = true else navController.navigate(Screen.Looks.route)
+                        if (SessionManager.isGuest) showAccountPrompt = true else onNavigateToLooks(LooksTab.PRICE_TRACKING)
                     }
                 )
             }
@@ -325,7 +328,7 @@ fun MeScreen(navController: NavController) {
         ) {
             Text(
                 text = "SETTINGS",
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp,
                 color = SoftCharcoal,
@@ -359,7 +362,7 @@ fun MeScreen(navController: NavController) {
                         onCheckedChange = { priceDropEnabled = it },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = White,
-                            checkedTrackColor = Lavender,
+                            checkedTrackColor = DeepForest,
                             uncheckedThumbColor = White,
                             uncheckedTrackColor = WarmGray,
                             uncheckedBorderColor = Color.Transparent

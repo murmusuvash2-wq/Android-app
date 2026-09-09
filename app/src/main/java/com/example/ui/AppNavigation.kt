@@ -26,7 +26,6 @@ fun AppNavigation(startDestination: String = Screen.Splash.route) {
         composable(Screen.TryOn.route) { TryOnScreen(navController) }
         composable(Screen.Processing.route) { ProcessingScreen(navController) }
         composable(Screen.Result.route) { ResultScreen(navController) }
-        composable(Screen.Looks.route) { LooksScreen(navController) }
         composable(Screen.TriesCredits.route) { CreditStoreScreen(navController) }
     }
 }

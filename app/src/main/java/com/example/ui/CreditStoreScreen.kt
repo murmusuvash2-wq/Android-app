@@ -31,13 +31,15 @@ fun CreditStoreScreen(navController: NavController) {
         modifier = Modifier
             .fillMaxSize()
             .background(WarmIvory)
+            .statusBarsPadding()
+            .navigationBarsPadding()
     ) {
         // Top Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .padding(top = 36.dp, bottom = 16.dp),
+                .padding(top = 16.dp, bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = { navController.navigateUp() }) {
@@ -55,13 +57,13 @@ fun CreditStoreScreen(navController: NavController) {
             Box(
                 modifier = Modifier
                     .size(80.dp)
-                    .background(Lavender.copy(alpha = 0.15f), RoundedCornerShape(24.dp)),
+                    .background(ChampagneGold.copy(alpha = 0.12f), RoundedCornerShape(24.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
                     contentDescription = null,
-                    tint = Lavender,
+                    tint = ChampagneGold,
                     modifier = Modifier.size(40.dp)
                 )
             }
@@ -133,8 +135,8 @@ fun CreditPackageCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(if (isPopular) Lavender.copy(alpha = 0.08f) else White, RoundedCornerShape(20.dp))
-            .border(2.dp, if (isPopular) Lavender else WarmGray, RoundedCornerShape(20.dp))
+            .background(if (isPopular) SurfaceVariantColor else White, RoundedCornerShape(20.dp))
+            .border(if (isPopular) 1.5.dp else 1.dp, if (isPopular) ChampagneGold else WarmGray, RoundedCornerShape(20.dp))
             .clickable { onClick() }
             .padding(18.dp)
     ) {
@@ -147,8 +149,8 @@ fun CreditPackageCard(
                 if (isPopular) {
                     Text(
                         text = "MOST POPULAR",
-                        color = Lavender,
-                        fontSize = 11.sp,
+                        color = ChampagneGold,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
                     )

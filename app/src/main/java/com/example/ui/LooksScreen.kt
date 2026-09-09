@@ -21,6 +21,8 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,6 +65,11 @@ data class TrackedProduct(
 )
 
 enum class LooksTab { RECENT, FAVOURITES, PRICE_TRACKING }
+
+val LooksTabSaver: Saver<LooksTab, String> = Saver(
+    save = { it.name },
+    restore = { LooksTab.valueOf(it) }
+)
 
 val MOCK_RESULTS = listOf(
     TryOnResult(
@@ -142,10 +149,32 @@ val MOCK_TRACKED = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LooksScreen(navController: NavController) {
-    var results by remember { mutableStateOf(if (SessionManager.isGuest) emptyList() else MOCK_RESULTS) }
-    var tracked by remember { mutableStateOf(if (SessionManager.isGuest) emptyList() else MOCK_TRACKED) }
-    var selectedTab by remember { mutableStateOf(LooksTab.RECENT) }
+fun LooksScreen(
+    navController: NavController,
+    requestedTab: LooksTab = LooksTab.RECENT,
+    onTabChanged: (LooksTab) -> Unit = {}
+) {
+    val saved = OnMeStyleRepository.savedResults
+    val results = remember(saved, SessionManager.isGuest, OnMeStyleRepository.favouriteProductIds) {
+        if (SessionManager.isGuest) emptyList()
+        else {
+            val combined = saved + MOCK_RESULTS.filterNot { mock ->
+                saved.any { it.id == mock.id || (it.productId == mock.productId && it.resultImage == mock.resultImage) }
+            }
+            combined.map { item ->
+                item.copy(isFavourite = OnMeStyleRepository.isFavourite(item.productId))
+            }
+        }
+    }
+    val tracked = remember(SessionManager.isGuest, OnMeStyleRepository.trackedProductIds, OnMeStyleRepository.customTrackedProducts) {
+        if (SessionManager.isGuest) emptyList()
+        else OnMeStyleRepository.getActiveTrackedProducts(MOCK_TRACKED)
+    }
+    var selectedTab by rememberSaveable(stateSaver = LooksTabSaver) { mutableStateOf(requestedTab) }
+
+    LaunchedEffect(requestedTab) {
+        selectedTab = requestedTab
+    }
 
     val favourites = results.filter { it.isFavourite }
 
@@ -153,7 +182,7 @@ fun LooksScreen(navController: NavController) {
         modifier = Modifier
             .fillMaxSize()
             .background(WarmIvory),
-        contentPadding = PaddingValues(bottom = 100.dp)
+        contentPadding = PaddingValues(bottom = SpacingXl)
     ) {
         // 1. HEADER
         item {
@@ -193,7 +222,7 @@ fun LooksScreen(navController: NavController) {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
                                 contentDescription = "Credits",
-                                tint = Lavender,
+                                tint = ChampagneGold,
                                 modifier = Modifier.size(14.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -220,21 +249,30 @@ fun LooksScreen(navController: NavController) {
                     TabPill(
                         title = "Recent",
                         isSelected = selectedTab == LooksTab.RECENT,
-                        onClick = { selectedTab = LooksTab.RECENT }
+                        onClick = {
+                            selectedTab = LooksTab.RECENT
+                            onTabChanged(LooksTab.RECENT)
+                        }
                     )
                 }
                 item {
                     TabPill(
                         title = "Favourites",
                         isSelected = selectedTab == LooksTab.FAVOURITES,
-                        onClick = { selectedTab = LooksTab.FAVOURITES }
+                        onClick = {
+                            selectedTab = LooksTab.FAVOURITES
+                            onTabChanged(LooksTab.FAVOURITES)
+                        }
                     )
                 }
                 item {
                     TabPill(
                         title = "Price Tracking",
                         isSelected = selectedTab == LooksTab.PRICE_TRACKING,
-                        onClick = { selectedTab = LooksTab.PRICE_TRACKING }
+                        onClick = {
+                            selectedTab = LooksTab.PRICE_TRACKING
+                            onTabChanged(LooksTab.PRICE_TRACKING)
+                        }
                     )
                 }
             }
@@ -264,9 +302,13 @@ fun LooksScreen(navController: NavController) {
                                 navController.navigate(Screen.Result.route)
                             },
                             onToggleFavourite = { result ->
-                                results = results.map {
-                                    if (it.id == result.id) it.copy(isFavourite = !it.isFavourite) else it
-                                }
+                                OnMeStyleRepository.toggleFavourite(
+                                    productId = result.productId,
+                                    productName = result.productName,
+                                    merchant = result.productBrand,
+                                    price = result.productPrice,
+                                    imageUrl = result.outfitImage
+                                )
                             }
                         )
                     }
@@ -293,9 +335,13 @@ fun LooksScreen(navController: NavController) {
                                 navController.navigate(Screen.Result.route)
                             },
                             onToggleFavourite = { result ->
-                                results = results.map {
-                                    if (it.id == result.id) it.copy(isFavourite = !it.isFavourite) else it
-                                }
+                                OnMeStyleRepository.toggleFavourite(
+                                    productId = result.productId,
+                                    productName = result.productName,
+                                    merchant = result.productBrand,
+                                    price = result.productPrice,
+                                    imageUrl = result.outfitImage
+                                )
                             }
                         )
                     }
@@ -341,7 +387,7 @@ fun EmptyLooksPlaceholder(title: String, subtitle: String) {
         Icon(
             imageVector = Icons.Default.AutoAwesome,
             contentDescription = null,
-            tint = Lavender,
+            tint = DeepForest,
             modifier = Modifier.size(44.dp)
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -366,8 +412,8 @@ fun TabPill(title: String, isSelected: Boolean, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
-        color = if (isSelected) Lavender else OffWhite,
-        border = BorderStroke(1.dp, if (isSelected) Lavender else WarmGray)
+        color = if (isSelected) DeepForest else OffWhite,
+        border = BorderStroke(1.dp, if (isSelected) DeepForest else WarmGray)
     ) {
         Text(
             text = title,
@@ -463,7 +509,7 @@ fun TryOnResultCard(
                         Icon(
                             imageVector = if (result.isFavourite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Favorite",
-                            tint = if (result.isFavourite) Lavender else Charcoal,
+                            tint = if (result.isFavourite) DeepForest else Charcoal,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -489,7 +535,7 @@ fun TryOnResultCard(
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = result.createdAt,
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     color = SoftCharcoal
                 )
             }
@@ -561,15 +607,15 @@ fun TrackedProductCard(
                     Icon(
                         imageVector = Icons.Default.Notifications,
                         contentDescription = null,
-                        tint = Lavender,
+                        tint = DeepForest,
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "Price tracking on",
-                        fontSize = 11.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Lavender
+                        color = DeepForest
                     )
                 }
             }

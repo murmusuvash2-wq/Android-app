@@ -1,6 +1,8 @@
 package com.example.ui
 
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -34,12 +36,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -53,11 +57,32 @@ object TryOnManager {
     var rating by mutableStateOf<Double?>(null)
     var reviewCount by mutableStateOf<Int?>(null)
     var ratingSource by mutableStateOf<String?>(null)
-    var isPriceTracked by mutableStateOf(false)
+    val isPriceTracked: Boolean
+        get() = OnMeStyleRepository.isPriceTracked(selectedProductId)
 
-    var selectedUserPhotoUri by mutableStateOf("https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80")
+    var selectedUserPhotoUri by mutableStateOf("")
     var generatedResultImageUri by mutableStateOf("")
     var showWatermark by mutableStateOf(true)
+
+    fun updateUserPhoto(uri: String?) {
+        if (!uri.isNullOrBlank()) {
+            selectedUserPhotoUri = uri
+        }
+    }
+
+    fun createTempCameraUri(context: Context): Uri? {
+        return try {
+            val photosDir = File(context.cacheDir, "camera_photos").apply { mkdirs() }
+            val tempFile = File.createTempFile("tryon_user_", ".jpg", photosDir)
+            FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                tempFile
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,12 +90,24 @@ object TryOnManager {
 fun TryOnScreen(navController: NavController) {
     val context = LocalContext.current
     var showAddPhotoSheet by remember { mutableStateOf(false) }
+    var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { success ->
+            if (success && tempCameraUri != null) {
+                TryOnManager.updateUserPhoto(tempCameraUri.toString())
+                Toast.makeText(context, "Photo captured!", Toast.LENGTH_SHORT).show()
+            }
+            tempCameraUri = null
+        }
+    )
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
             if (uri != null) {
-                TryOnManager.selectedUserPhotoUri = uri.toString()
+                TryOnManager.updateUserPhoto(uri.toString())
             }
         }
     )
@@ -109,15 +146,19 @@ fun TryOnScreen(navController: NavController) {
                 Button(
                     onClick = {
                         showAddPhotoSheet = false
-                        // Use realistic camera sample photo
-                        TryOnManager.selectedUserPhotoUri = "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=600&q=80"
-                        Toast.makeText(context, "Photo captured!", Toast.LENGTH_SHORT).show()
+                        val uri = TryOnManager.createTempCameraUri(context)
+                        if (uri != null) {
+                            tempCameraUri = uri
+                            cameraLauncher.launch(uri)
+                        } else {
+                            Toast.makeText(context, "Unable to launch camera", Toast.LENGTH_SHORT).show()
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(54.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Lavender, contentColor = Color.White)
+                    colors = ButtonDefaults.buttonColors(containerColor = Charcoal, contentColor = Color.White)
                 ) {
                     Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -148,12 +189,14 @@ fun TryOnScreen(navController: NavController) {
         modifier = Modifier
             .fillMaxSize()
             .background(WarmIvory)
+            .statusBarsPadding()
+            .navigationBarsPadding()
     ) {
         // Top Navigation Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 36.dp),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -198,7 +241,7 @@ fun TryOnScreen(navController: NavController) {
 
                     Text(
                         text = TryOnManager.selectedProductBrand.uppercase(),
-                        fontSize = 11.sp,
+                        fontSize = 12.sp,
                         color = SoftCharcoal,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
@@ -214,7 +257,7 @@ fun TryOnScreen(navController: NavController) {
                     Text(
                         text = priceStr,
                         fontSize = 15.sp,
-                        color = Lavender,
+                        color = Charcoal,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -250,7 +293,7 @@ fun TryOnScreen(navController: NavController) {
                     onClick = { showAddPhotoSheet = true },
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) {
-                    Text("Change Photo", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Lavender)
+                    Text("Change Photo", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = DeepForest)
                 }
             } else {
                 Box(
@@ -274,7 +317,7 @@ fun TryOnScreen(navController: NavController) {
                         Spacer(modifier = Modifier.height(18.dp))
                         Button(
                             onClick = { showAddPhotoSheet = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = Lavender, contentColor = Color.White),
+                            colors = ButtonDefaults.buttonColors(containerColor = Charcoal, contentColor = Color.White),
                             shape = RoundedCornerShape(16.dp)
                         ) {
                             Text("Add Your Photo", fontWeight = FontWeight.SemiBold)
@@ -285,30 +328,50 @@ fun TryOnScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            val hasValidPhoto = TryOnManager.selectedUserPhotoUri.isNotBlank()
+            val hasSufficientCredits = SessionManager.hasSufficientCredits
+            var isSubmitting by remember { mutableStateOf(false) }
+
+            // Ensure submission lock resets if user re-enters or returns to screen
+            LaunchedEffect(Unit) {
+                isSubmitting = false
+            }
+
+            val isConfirmEnabled = hasValidPhoto && hasSufficientCredits && !isSubmitting
+
             Button(
                 onClick = {
-                    if (TryOnManager.selectedUserPhotoUri.isEmpty()) {
-                        Toast.makeText(context, "Please add a photo first", Toast.LENGTH_SHORT).show()
-                    } else if (!SessionManager.isGuest && SessionManager.credits < 1) {
-                        Toast.makeText(context, "Not enough credits", Toast.LENGTH_SHORT).show()
-                    } else {
-                        if (!SessionManager.isGuest) {
-                            SessionManager.credits -= 1
-                        }
+                    if (!isConfirmEnabled) return@Button
+                    isSubmitting = true
+                    if (SessionManager.holdCredit()) {
                         navController.navigate(Screen.Processing.route)
+                    } else {
+                        isSubmitting = false
                     }
                 },
+                enabled = isConfirmEnabled,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Charcoal, contentColor = Color.White)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Charcoal,
+                    contentColor = Color.White,
+                    disabledContainerColor = WarmGray,
+                    disabledContentColor = DisabledColor
+                )
             ) {
                 Text("Confirm & Try On", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(8.dp))
+            val statusText = when {
+                SessionManager.isGuest -> "Guest mode (Free preview)"
+                !hasValidPhoto -> "Add a photo above to continue"
+                !hasSufficientCredits -> "No credits remaining (0 available)"
+                else -> "1 Credit will be used (${SessionManager.availableCredits} remaining)"
+            }
             Text(
-                text = if (SessionManager.isGuest) "Guest mode (Free preview)" else "1 Credit will be used (${SessionManager.credits} remaining)",
+                text = statusText,
                 fontSize = 12.sp,
                 color = SoftCharcoal,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -321,6 +384,16 @@ fun TryOnScreen(navController: NavController) {
 @Composable
 fun ProcessingScreen(navController: NavController) {
     var showCancelDialog by remember { mutableStateOf(false) }
+    var isCompletedSuccessfully by remember { mutableStateOf(false) }
+
+    // Ensure any held credit is released if Processing is cancelled or disposed before completion
+    DisposableEffect(Unit) {
+        onDispose {
+            if (!isCompletedSuccessfully) {
+                SessionManager.releaseHeldCredit()
+            }
+        }
+    }
 
     val tips = remember {
         listOf(
@@ -328,7 +401,7 @@ fun ProcessingScreen(navController: NavController) {
             "OnMe Tip\nTry the same outfit with another photo to compare the result.",
             "Style Fact\nA tailored blazer instantly adds structure to any relaxed fit.",
             "Style Tip\nLinen works beautifully with simple accessories for an effortless look.",
-            "Color Harmony\nNeutral tones pair effortlessly with soft lavender accents."
+            "Color Harmony\nNeutral tones pair effortlessly with deep forest accents."
         )
     }
 
@@ -350,6 +423,11 @@ fun ProcessingScreen(navController: NavController) {
                 TryOnManager.generatedResultImageUri = TryOnManager.selectedProductImage
             }
             TryOnManager.showWatermark = true
+            
+            // Mark completed and finalize the held credit exactly once
+            SessionManager.consumeHeldCredit()
+            isCompletedSuccessfully = true
+
             navController.navigate(Screen.Result.route) {
                 popUpTo(Screen.TryOn.route) { inclusive = true }
             }
@@ -369,6 +447,7 @@ fun ProcessingScreen(navController: NavController) {
                 Button(
                     onClick = {
                         showCancelDialog = false
+                        SessionManager.releaseHeldCredit()
                         navController.navigateUp()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Charcoal, contentColor = Color.White)
@@ -409,7 +488,9 @@ fun ProcessingScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(WarmIvory),
+            .background(WarmIvory)
+            .statusBarsPadding()
+            .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -422,8 +503,8 @@ fun ProcessingScreen(navController: NavController) {
                     scaleY = scale
                 }
                 .clip(RoundedCornerShape(36.dp))
-                .background(Lavender.copy(alpha = alpha))
-                .border(2.dp, Lavender, RoundedCornerShape(36.dp)),
+                .background(DeepForest.copy(alpha = alpha))
+                .border(2.dp, DeepForest, RoundedCornerShape(36.dp)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -496,7 +577,7 @@ fun ResultScreen(navController: NavController) {
                         showAccountPrompt = false
                         navController.navigate(Screen.Onboarding.route) { popUpTo(0) }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Lavender, contentColor = Color.White)
+                    colors = ButtonDefaults.buttonColors(containerColor = Charcoal, contentColor = Color.White)
                 ) {
                     Text("Create Account")
                 }
@@ -516,13 +597,15 @@ fun ResultScreen(navController: NavController) {
         modifier = Modifier
             .fillMaxSize()
             .background(WarmIvory)
+            .statusBarsPadding()
+            .navigationBarsPadding()
     ) {
         // Top Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .padding(top = 36.dp, bottom = 12.dp),
+                .padding(top = 16.dp, bottom = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -589,7 +672,7 @@ fun ResultScreen(navController: NavController) {
 
             Text(
                 text = TryOnManager.selectedProductBrand.uppercase(),
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 color = SoftCharcoal,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
@@ -621,7 +704,7 @@ fun ResultScreen(navController: NavController) {
                     Icon(
                         imageVector = Icons.Default.Star,
                         contentDescription = null,
-                        tint = Color(0xFFFFB800),
+                        tint = ChampagneGold,
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
@@ -649,6 +732,20 @@ fun ResultScreen(navController: NavController) {
                     if (SessionManager.isGuest) {
                         showAccountPrompt = true
                     } else {
+                        val newResult = TryOnResult(
+                            id = "result_${System.currentTimeMillis()}",
+                            userPhoto = TryOnManager.selectedUserPhotoUri,
+                            outfitImage = TryOnManager.selectedProductImage,
+                            resultImage = TryOnManager.generatedResultImageUri,
+                            createdAt = "Just now",
+                            isFavourite = OnMeStyleRepository.isFavourite(TryOnManager.selectedProductId),
+                            productId = TryOnManager.selectedProductId,
+                            productName = TryOnManager.selectedProductName,
+                            productBrand = TryOnManager.selectedProductBrand,
+                            productPrice = TryOnManager.selectedProductPrice,
+                            cardHeight = 240
+                        )
+                        OnMeStyleRepository.saveResult(newResult)
                         Toast.makeText(context, "Saved to your Looks!", Toast.LENGTH_SHORT).show()
                     }
                 },
@@ -699,8 +796,14 @@ fun ResultScreen(navController: NavController) {
                     if (SessionManager.isGuest) {
                         showAccountPrompt = true
                     } else {
-                        TryOnManager.isPriceTracked = !TryOnManager.isPriceTracked
-                        val msg = if (TryOnManager.isPriceTracked) "Price tracking enabled!" else "Price tracking disabled"
+                        val isNowTracked = OnMeStyleRepository.togglePriceTracking(
+                            productId = TryOnManager.selectedProductId,
+                            productName = TryOnManager.selectedProductName,
+                            merchant = TryOnManager.selectedProductBrand,
+                            price = TryOnManager.selectedProductPrice,
+                            imageUrl = TryOnManager.selectedProductImage
+                        )
+                        val msg = if (isNowTracked) "Price tracking enabled!" else "Price tracking disabled"
                         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                     }
                 },
@@ -710,14 +813,14 @@ fun ResultScreen(navController: NavController) {
                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (TryOnManager.isPriceTracked) Lavender.copy(alpha = 0.12f) else White,
-                    contentColor = if (TryOnManager.isPriceTracked) Lavender else Charcoal
+                    containerColor = if (TryOnManager.isPriceTracked) DeepForest.copy(alpha = 0.12f) else White,
+                    contentColor = if (TryOnManager.isPriceTracked) DeepForest else Charcoal
                 ),
-                border = BorderStroke(1.dp, if (TryOnManager.isPriceTracked) Lavender else WarmGray)
+                border = BorderStroke(1.dp, if (TryOnManager.isPriceTracked) DeepForest else WarmGray)
             ) {
                 Text(
                     text = if (TryOnManager.isPriceTracked) "🔔 Price Drop ✓" else "🔔 Price Drop",
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1
                 )
@@ -754,7 +857,7 @@ fun ResultScreen(navController: NavController) {
                 Text(
                     text = "Watch Ad",
                     fontSize = 13.sp,
-                    color = Lavender,
+                    color = DeepForest,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.clickable {
                         Toast.makeText(context, "Watching Ad...", Toast.LENGTH_SHORT).show()

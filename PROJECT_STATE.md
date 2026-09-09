@@ -174,11 +174,49 @@ Splash
 
 ---
 
-## 5. Automated Testing & Build Verification
+## 5. Milestone 4 — Home + Core Flow Stability (COMPLETED)
+
+Milestone 4 addressed end-to-end stability, state consistency, user trust, and visual polish across the core experience:
+
+- **Batch 1 — Credit & Trust Safety:**
+  - Implemented real `SessionManager` hold/consume/release credit lifecycle (`holdCredit()`, `consumeHeldCredit()`, `releaseHeldCredit()`).
+  - Safe against negative balances, duplicate deductions, and UI double-taps.
+  - Initial credit grants locked: Google/Email authenticated user = 2 free credits, Guest = 0 credits (with client-side try access).
+- **Batch 2 — My Try-On Photo Flow:**
+  - Decoupled photo capture/selection from starting Try-On: Take Photo (Camera) and Choose from Gallery (Photo Picker) update `TryOnManager.selectedUserPhotoUri` with feedback toast and do not auto-navigate.
+  - Universal Try-On screen respects preloaded photo; disables action button if photo is absent or credits insufficient.
+- **Batch 3A — Discover Visual Balance:**
+  - Refined top bar spacing, edge-to-edge padding, and modern sticky search bar.
+  - Polished staggered product cards, typography hierarchy, and Peek & Reveal bottom sheet.
+- **Batch 3B — Navigation Integrity:**
+  - Deep-linked Me screen shortcuts (`Saved Looks` → Looks Recent, `Price Tracking` → Looks Price Tracking) via `AppShell`.
+  - Enforced Back button hierarchy: Child handlers (sheets/dialogs) intercept first; secondary tabs (Discover, Looks, Me) navigate back to Home; Home navigates to device exit.
+  - Bottom navigation tab state persisted via `rememberSaveable`.
+- **Batch 4 — State Integrity:**
+  - Introduced unified in-memory `OnMeStyleRepository` for synchronized state management across Home, Discover, Looks, and Result.
+  - Favouriting an item automatically activates Price Tracking; disabling price tracking does not unfavourite.
+  - Saved looks and price tracking actions are strictly idempotent with persistent UI confirmation.
+- **Batch 5 — Discover Tab Filtering:**
+  - Pure, deterministic catalog filtering function `getProductsForTab` across all four tabs:
+    - *Trending Now*: Curated catalog order.
+    - *Most Loved*: User favorites first, followed by real customer review volume.
+    - *Best Sellers*: Ranked by customer review volume (`reviewCount` descending).
+    - *Just In*: Reverse catalog insertion order (newest arrival first).
+  - Search queries seamlessly apply within the selected tab and survive tab switching; clearing search restores the active tab's full dataset.
+  - No fabricated or synthetic metrics introduced.
+
+---
+
+## 6. Automated Testing & Build Verification
 
 - **Build Tool:** Gradle 9.3.1 with Android Gradle Plugin 9.1.1
 - **Compilation:** `compile_applet` builds cleanly with zero errors.
 - **Unit & Robolectric Tests:**
-  - `:app:testDebugUnitTest` passes.
+  - `:app:testDebugUnitTest` passes (33/33 tasks).
+  - `CreditSafetyUnitTest`: Verifies credit hold/consume/release lifecycle, idempotency, negative balance prevention, and initial credit grant (2 for authenticated, 0 for guest).
+  - `PhotoFlowUnitTest`: Verifies photo selection without auto-try-on trigger.
+  - `NavigationIntegrityTest`: Verifies tab switching, deep linking, and back stack behaviors.
+  - `StateIntegrityTest`: Verifies repository synchronization, favourite/tracking coupling, and idempotency.
+  - `DiscoverTabFilteringTest`: Verifies deterministic tab filtering, search composition, and empty states.
   - `ExampleRobolectricTest`: Verifies resource loading and app name.
   - `GreetingScreenshotTest`: Native graphics Robolectric test using Roborazzi rendering `SplashScreen`.

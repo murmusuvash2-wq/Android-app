@@ -1,5 +1,7 @@
 package com.example.ui
 
+import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -7,6 +9,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -20,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,60 +41,74 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
+import java.text.NumberFormat
+import java.util.Locale
 
-data class OutfitShowcaseData(
-    val productImageUrl: String,
-    val modelImageUrl: String,
+data class HeroLook(
+    val id: String,
     val title: String,
-    val description: String,
+    val primaryImage: String,
+    val hangerImage: String? = null,
+    val wornImage: String? = null,
     val brand: String,
+    val brandLogo: String? = null,
     val price: Double
-)
+) {
+    // Backward-compatibility properties with hangerImage fallback
+    val productImageUrl: String get() = hangerImage ?: primaryImage
+    val modelImageUrl: String get() = wornImage ?: primaryImage
+}
+
+typealias OutfitShowcaseData = HeroLook
 
 data class TrendingLook(
     val id: String,
     val title: String,
     val imageUrl: String,
     val brand: String,
+    val brandLogo: String? = null,
     val price: Double,
-    val tries: String
+    val tryOnCount: String? = null
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(
+    navController: NavController,
+    onNavigateToDiscover: () -> Unit = {}
+) {
     val scrollState = rememberScrollState()
     val showcaseDataList = remember {
         listOf(
-            OutfitShowcaseData(
-                productImageUrl = "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=600&q=80",
-                modelImageUrl = "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=600&q=80",
-                title = "Lavender Floral Dress",
-                description = "Soft, breezy & perfect for sunny days.",
+            HeroLook(
+                id = "hero_0",
+                primaryImage = "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=600&q=80",
+                wornImage = "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=600&q=80",
+                title = "Forest Floral Dress",
                 brand = "ZARA",
                 price = 3499.0
             ),
-            OutfitShowcaseData(
-                productImageUrl = "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=600&q=80",
-                modelImageUrl = "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=600&q=80",
+            HeroLook(
+                id = "hero_1",
+                primaryImage = "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=600&q=80",
+                wornImage = "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=600&q=80",
                 title = "Blue Floral Smocked Dress",
-                description = "Light, comfy & perfect for everyday.",
                 brand = "H&M",
                 price = 2999.0
             ),
-            OutfitShowcaseData(
-                productImageUrl = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80",
-                modelImageUrl = "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=600&q=80",
+            HeroLook(
+                id = "hero_2",
+                primaryImage = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80",
+                wornImage = "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=600&q=80",
                 title = "Beige Linen Co-ord Set",
-                description = "Effortless, breathable & versatile.",
                 brand = "MANGO",
                 price = 4599.0
             ),
-            OutfitShowcaseData(
-                productImageUrl = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80",
-                modelImageUrl = "https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&w=600&q=80",
+            HeroLook(
+                id = "hero_3",
+                primaryImage = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80",
+                wornImage = "https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&w=600&q=80",
                 title = "Navy Knit Polo & Trousers",
-                description = "Smart, tailored & comfortable.",
                 brand = "MASSIMO DUTTI",
                 price = 5999.0
             )
@@ -114,7 +132,7 @@ fun HomeScreen(navController: NavController) {
                 imageUrl = "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=400&q=80",
                 brand = "URBANIC",
                 price = 2499.0,
-                tries = "12.4K tries"
+                tryOnCount = null
             ),
             TrendingLook(
                 id = "2",
@@ -122,7 +140,7 @@ fun HomeScreen(navController: NavController) {
                 imageUrl = "https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&w=400&q=80",
                 brand = "ZARA",
                 price = 3999.0,
-                tries = "8.7K tries"
+                tryOnCount = null
             ),
             TrendingLook(
                 id = "3",
@@ -130,7 +148,7 @@ fun HomeScreen(navController: NavController) {
                 imageUrl = "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=400&q=80",
                 brand = "LEVI'S",
                 price = 2899.0,
-                tries = "15.2K tries"
+                tryOnCount = null
             ),
             TrendingLook(
                 id = "4",
@@ -138,22 +156,31 @@ fun HomeScreen(navController: NavController) {
                 imageUrl = "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&q=80",
                 brand = "H&M",
                 price = 3299.0,
-                tries = "6.1K tries"
+                tryOnCount = null
             )
         )
     }
+
+    val context = LocalContext.current
+    var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { success ->
+            if (success && tempCameraUri != null) {
+                TryOnManager.updateUserPhoto(tempCameraUri.toString())
+                Toast.makeText(context, "Try-On photo updated", Toast.LENGTH_SHORT).show()
+            }
+            tempCameraUri = null
+        }
+    )
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
             if (uri != null) {
-                TryOnManager.selectedProductId = "prod_featured"
-                TryOnManager.selectedProductName = "Featured Outfit"
-                TryOnManager.selectedProductBrand = "OnMe Pick"
-                TryOnManager.selectedProductPrice = 2499.0
-                TryOnManager.selectedProductImage = "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=600&q=80"
-                TryOnManager.selectedUserPhotoUri = uri.toString()
-                navController.navigate(Screen.TryOn.route)
+                TryOnManager.updateUserPhoto(uri.toString())
+                Toast.makeText(context, "Try-On photo updated", Toast.LENGTH_SHORT).show()
             }
         }
     )
@@ -164,8 +191,8 @@ fun HomeScreen(navController: NavController) {
             .background(WarmIvory)
             .verticalScroll(scrollState)
             .padding(horizontal = 16.dp)
-            .padding(top = 20.dp, bottom = 100.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+            .padding(top = SpacingXl, bottom = SpacingXl),
+        verticalArrangement = Arrangement.spacedBy(SpacingXl)
     ) {
         // 1. HEADER
         Row(
@@ -179,13 +206,13 @@ fun HomeScreen(navController: NavController) {
                         text = "OnMe",
                         fontWeight = FontWeight.Bold,
                         fontSize = 30.sp,
-                        color = Lavender,
+                        color = Charcoal,
                         letterSpacing = (-1).sp
                     )
                     Icon(
                         imageVector = Icons.Default.AutoAwesome,
                         contentDescription = null,
-                        tint = Lavender,
+                        tint = DeepForest,
                         modifier = Modifier
                             .size(16.dp)
                             .offset(x = 3.dp, y = (-5).dp)
@@ -215,7 +242,7 @@ fun HomeScreen(navController: NavController) {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
                                 contentDescription = "Credits",
-                                tint = Lavender,
+                                tint = ChampagneGold,
                                 modifier = Modifier.size(14.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -249,7 +276,7 @@ fun HomeScreen(navController: NavController) {
                             .align(Alignment.TopEnd)
                             .offset(x = (-8).dp, y = 8.dp)
                             .size(7.dp)
-                            .background(Lavender, CircleShape)
+                            .background(DeepForest, CircleShape)
                             .border(1.dp, Color.White, CircleShape)
                     )
                 }
@@ -269,7 +296,7 @@ fun HomeScreen(navController: NavController) {
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
                     contentDescription = null,
-                    tint = Lavender,
+                    tint = DeepForest,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -337,7 +364,7 @@ fun HomeScreen(navController: NavController) {
                             Icon(
                                 imageVector = Icons.Default.ArrowForward,
                                 contentDescription = "Try-on arrow",
-                                tint = Lavender,
+                                tint = DeepForest,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -345,11 +372,18 @@ fun HomeScreen(navController: NavController) {
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Info and CTA row
+                    // Info and CTA row (compact, showing title, price, and CTA)
+                    val heroPriceFormatted = remember(currentShowcase.price) {
+                        NumberFormat.getCurrencyInstance(Locale("en", "IN")).apply {
+                            maximumFractionDigits = 0
+                        }.format(currentShowcase.price)
+                    }
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(54.dp),
+                            .heightIn(min = 52.dp)
+                            .wrapContentHeight(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -365,7 +399,7 @@ fun HomeScreen(navController: NavController) {
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
-                                    .size(44.dp)
+                                    .size(42.dp)
                                     .clip(RoundedCornerShape(10.dp))
                                     .background(OffWhite)
                             )
@@ -374,17 +408,18 @@ fun HomeScreen(navController: NavController) {
                                 Text(
                                     text = currentShowcase.title,
                                     fontSize = 14.sp,
+                                    fontFamily = Inter,
                                     fontWeight = FontWeight.Bold,
                                     color = Charcoal,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    text = currentShowcase.description,
-                                    fontSize = 12.sp,
-                                    color = SoftCharcoal,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                    text = heroPriceFormatted,
+                                    fontSize = 13.sp,
+                                    fontFamily = Inter,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = SoftCharcoal
                                 )
                             }
                         }
@@ -393,15 +428,15 @@ fun HomeScreen(navController: NavController) {
 
                         Button(
                             onClick = {
-                                TryOnManager.selectedProductId = "hero_$page"
+                                TryOnManager.selectedProductId = currentShowcase.id
                                 TryOnManager.selectedProductName = currentShowcase.title
                                 TryOnManager.selectedProductBrand = currentShowcase.brand
                                 TryOnManager.selectedProductPrice = currentShowcase.price
-                                TryOnManager.selectedProductImage = currentShowcase.productImageUrl
-                                TryOnManager.generatedResultImageUri = currentShowcase.modelImageUrl
+                                TryOnManager.selectedProductImage = currentShowcase.primaryImage
+                                TryOnManager.generatedResultImageUri = currentShowcase.wornImage ?: currentShowcase.primaryImage
                                 navController.navigate(Screen.TryOn.route)
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = Lavender, contentColor = Color.White),
+                            colors = ButtonDefaults.buttonColors(containerColor = Charcoal, contentColor = Color.White),
                             shape = RoundedCornerShape(20.dp),
                             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                             modifier = Modifier.height(38.dp)
@@ -433,7 +468,7 @@ fun HomeScreen(navController: NavController) {
                             .height(6.dp)
                             .width(if (isSelected) 18.dp else 6.dp)
                             .clip(CircleShape)
-                            .background(if (isSelected) Lavender else WarmGray)
+                            .background(if (isSelected) DeepForest else WarmGray)
                     )
                     if (iteration < showcaseDataList.size - 1) {
                         Spacer(modifier = Modifier.width(6.dp))
@@ -450,15 +485,16 @@ fun HomeScreen(navController: NavController) {
             // Take Photo
             Surface(
                 onClick = {
-                    TryOnManager.selectedProductId = "prod_camera"
-                    TryOnManager.selectedProductName = "Camera Captured Look"
-                    TryOnManager.selectedProductBrand = "OnMe Snap"
-                    TryOnManager.selectedProductPrice = 2499.0
-                    TryOnManager.selectedProductImage = "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&q=80"
-                    navController.navigate(Screen.TryOn.route)
+                    val uri = TryOnManager.createTempCameraUri(context)
+                    if (uri != null) {
+                        tempCameraUri = uri
+                        cameraLauncher.launch(uri)
+                    } else {
+                        Toast.makeText(context, "Unable to launch camera", Toast.LENGTH_SHORT).show()
+                    }
                 },
                 shape = RoundedCornerShape(16.dp),
-                color = Lavender,
+                color = Charcoal,
                 modifier = Modifier
                     .weight(1f)
                     .height(68.dp)
@@ -484,7 +520,7 @@ fun HomeScreen(navController: NavController) {
                         )
                         Text(
                             text = "Try on any outfit",
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             color = Color.White.copy(alpha = 0.85f)
                         )
                     }
@@ -499,7 +535,8 @@ fun HomeScreen(navController: NavController) {
                     )
                 },
                 shape = RoundedCornerShape(16.dp),
-                color = SoftLavender,
+                color = SurfaceVariantColor,
+                border = BorderStroke(1.dp, WarmGray),
                 modifier = Modifier
                     .weight(1f)
                     .height(68.dp)
@@ -527,7 +564,7 @@ fun HomeScreen(navController: NavController) {
                         )
                         Text(
                             text = "From your gallery",
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             color = SoftCharcoal,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -555,14 +592,14 @@ fun HomeScreen(navController: NavController) {
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { navController.navigate(Screen.Looks.route) }
+                    modifier = Modifier.clickable { onNavigateToDiscover() }
                 ) {
-                    Text("View All", fontSize = 13.sp, color = Lavender, fontWeight = FontWeight.SemiBold)
+                    Text("View All", fontSize = 13.sp, color = DeepForest, fontWeight = FontWeight.SemiBold)
                     Spacer(modifier = Modifier.width(2.dp))
                     Icon(
                         Icons.Default.ArrowForward,
                         contentDescription = null,
-                        tint = Lavender,
+                        tint = DeepForest,
                         modifier = Modifier.size(14.dp)
                     )
                 }
@@ -572,10 +609,20 @@ fun HomeScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(trendingLooks) { item ->
+                items(trendingLooks, key = { it.id }) { item ->
                     TrendingLookCard(
                         data = item,
-                        onClick = {
+                        isFavourite = OnMeStyleRepository.isFavourite(item.id),
+                        onToggleFavourite = {
+                            OnMeStyleRepository.toggleFavourite(
+                                productId = item.id,
+                                productName = item.title,
+                                merchant = item.brand,
+                                price = item.price,
+                                imageUrl = item.imageUrl
+                            )
+                        },
+                        onTryOn = {
                             TryOnManager.selectedProductId = item.id
                             TryOnManager.selectedProductName = item.title
                             TryOnManager.selectedProductBrand = item.brand
@@ -593,24 +640,32 @@ fun HomeScreen(navController: NavController) {
 @Composable
 private fun TrendingLookCard(
     data: TrendingLook,
-    onClick: () -> Unit
+    isFavourite: Boolean,
+    onToggleFavourite: () -> Unit,
+    onTryOn: () -> Unit
 ) {
+    val formatter = remember {
+        NumberFormat.getCurrencyInstance(Locale("en", "IN")).apply {
+            maximumFractionDigits = 0
+        }
+    }
+    val formattedPrice = formatter.format(data.price)
+
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = OffWhite),
-        border = BorderStroke(1.dp, WarmGray),
+        colors = CardDefaults.cardColors(containerColor = SurfaceColor),
+        border = BorderStroke(1.dp, BorderColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        modifier = Modifier
-            .width(145.dp)
-            .clickable { onClick() }
+        modifier = Modifier.width(156.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
+            // [ PRODUCT IMAGE ]
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
+                    .height(140.dp)
                     .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                    .background(WarmIvory)
+                    .background(SurfaceVariantColor)
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
@@ -622,58 +677,146 @@ private fun TrendingLookCard(
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Try On overlay pill
+                // Heart button: positioned inside the image, top-right
+                // Minimum 48dp touch target with subtle circular press feedback
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color.Black.copy(alpha = 0.5f),
+                    onClick = onToggleFavourite,
+                    shape = CircleShape,
+                    color = SurfaceColor.copy(alpha = 0.90f),
+                    border = BorderStroke(1.dp, BorderColor),
                     modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(8.dp)
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(32.dp)
                 ) {
-                    Text(
-                        text = data.tries,
-                        color = Color.White,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = if (isFavourite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = if (isFavourite) "Remove from favourites" else "Save to favourites",
+                            tint = if (isFavourite) DeepForest else PrimaryText,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+
+                // Optional social proof: bottom-right inside the product image
+                // Show tryOnCount ONLY when real backend data exists; if null, hide completely
+                if (!data.tryOnCount.isNullOrBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color.Black.copy(alpha = 0.55f),
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(6.dp)
+                    ) {
+                        Text(
+                            text = "✨ ${data.tryOnCount} tried",
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontFamily = Inter,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
                 }
             }
 
-            Column(modifier = Modifier.padding(10.dp)) {
-                Text(
-                    text = data.brand,
-                    fontSize = 10.sp,
-                    color = SoftCharcoal,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
-                )
-                Text(
-                    text = data.title,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Charcoal,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(4.dp))
+            // Below image: Brand & Price, Product Name, Try On
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 8.dp)
+            ) {
+                // 1. Brand and price on the same horizontal row (brand left, price right)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    if (!data.brandLogo.isNullOrBlank()) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(data.brandLogo)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = data.brand,
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .height(14.dp)
+                                .widthIn(max = 55.dp)
+                        )
+                    } else {
+                        Text(
+                            text = data.brand.uppercase(),
+                            style = BrandTagStyle,
+                            color = SecondaryText,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
                     Text(
-                        text = "₹${data.price.toInt()}",
+                        text = formattedPrice,
                         fontSize = 13.sp,
+                        fontFamily = Inter,
                         fontWeight = FontWeight.Bold,
-                        color = Lavender
+                        color = PrimaryText
                     )
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = "Try",
-                        tint = Lavender,
-                        modifier = Modifier.size(14.dp)
-                    )
+                }
+
+                Spacer(modifier = Modifier.height(3.dp))
+
+                // 2. Product Name: maximum 1-2 lines, ellipsis if necessary
+                Text(
+                    text = data.title,
+                    fontSize = 12.sp,
+                    fontFamily = Inter,
+                    fontWeight = FontWeight.Medium,
+                    color = PrimaryText,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 3. Try On: compact visual button, minimum 48dp actual touch target
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .defaultMinSize(minHeight = 48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Button(
+                        onClick = onTryOn,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = DeepForest,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(34.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Try On",
+                            fontSize = 12.sp,
+                            fontFamily = Inter,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                    }
                 }
             }
         }

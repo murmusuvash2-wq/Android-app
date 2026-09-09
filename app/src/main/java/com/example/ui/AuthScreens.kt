@@ -65,13 +65,13 @@ fun SplashScreen(navController: NavController) {
                 text = "OnMe",
                 fontWeight = FontWeight.Bold,
                 fontSize = 46.sp,
-                color = Lavender,
+                color = Charcoal,
                 letterSpacing = (-1.5).sp
             )
             Icon(
                 imageVector = Icons.Default.AutoAwesome,
                 contentDescription = null,
-                tint = Lavender,
+                tint = DeepForest,
                 modifier = Modifier
                     .size(24.dp)
                     .offset(x = 4.dp, y = (-12).dp)
@@ -90,7 +90,7 @@ fun SplashScreen(navController: NavController) {
                 .width(28.dp)
                 .height(4.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .background(Lavender.copy(alpha = alpha))
+                .background(DeepForest.copy(alpha = alpha))
         )
     }
 }
@@ -251,7 +251,7 @@ fun OnboardingScreen(navController: NavController) {
                     }
                 },
                 shape = RoundedCornerShape(24.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Lavender, contentColor = Color.White)
+                colors = ButtonDefaults.buttonColors(containerColor = Charcoal, contentColor = Color.White)
             ) {
                 Text(
                     text = if (pagerState.currentPage == pages.size - 1) "Get Started" else "Next",
@@ -279,7 +279,7 @@ fun OnboardingScreen(navController: NavController) {
             AuthBottomSheetContent(
                 onGoogleSignIn = {
                     SessionManager.isGuest = false
-                    SessionManager.credits = 12
+                    SessionManager.credits = 2
                     showBottomSheet = false
                     navController.navigate(Screen.MainApp.route) {
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
@@ -287,6 +287,7 @@ fun OnboardingScreen(navController: NavController) {
                 },
                 onGuestSignIn = {
                     SessionManager.isGuest = true
+                    SessionManager.credits = 0
                     showBottomSheet = false
                     navController.navigate(Screen.MainApp.route) {
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
@@ -354,7 +355,7 @@ fun AuthBottomSheetContent(
                                 .fillMaxWidth()
                                 .height(54.dp),
                             shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Lavender, contentColor = Color.White)
+                            colors = ButtonDefaults.buttonColors(containerColor = Charcoal, contentColor = Color.White)
                         ) {
                             Text("Sign Up with Email", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                         }
@@ -420,7 +421,7 @@ fun AuthBottomSheetContent(
                             },
                             modifier = Modifier.fillMaxWidth().height(54.dp),
                             shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Lavender, contentColor = Color.White)
+                            colors = ButtonDefaults.buttonColors(containerColor = Charcoal, contentColor = Color.White)
                         ) {
                             Text("Create Account", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                         }
@@ -445,7 +446,7 @@ fun AuthBottomSheetContent(
                         if (showResetSuccess) {
                             Text(
                                 text = "Reset link sent! Please check your email.",
-                                color = Lavender,
+                                color = DeepForest,
                                 fontWeight = FontWeight.Medium,
                                 textAlign = TextAlign.Center
                             )
@@ -474,7 +475,7 @@ fun AuthBottomSheetContent(
                                 },
                                 modifier = Modifier.fillMaxWidth().height(54.dp),
                                 shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Lavender, contentColor = Color.White)
+                                colors = ButtonDefaults.buttonColors(containerColor = Charcoal, contentColor = Color.White)
                             ) {
                                 Text("Send Reset Link", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                             }

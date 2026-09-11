@@ -279,7 +279,7 @@ fun OnboardingScreen(navController: NavController) {
             AuthBottomSheetContent(
                 onGoogleSignIn = {
                     SessionManager.isGuest = false
-                    SessionManager.credits = 2
+                    
                     showBottomSheet = false
                     navController.navigate(Screen.MainApp.route) {
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
@@ -287,7 +287,7 @@ fun OnboardingScreen(navController: NavController) {
                 },
                 onGuestSignIn = {
                     SessionManager.isGuest = true
-                    SessionManager.credits = 0
+                    
                     showBottomSheet = false
                     navController.navigate(Screen.MainApp.route) {
                         popUpTo(Screen.Onboarding.route) { inclusive = true }

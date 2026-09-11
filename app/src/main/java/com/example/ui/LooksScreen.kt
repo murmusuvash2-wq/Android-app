@@ -61,7 +61,8 @@ data class TrackedProduct(
     val merchant: String,
     val currentPrice: Double,
     val productUrl: String,
-    val trackedAt: String
+    val trackedAt: String,
+    val targetPrice: Double? = null
 )
 
 enum class LooksTab { RECENT, FAVOURITES, PRICE_TRACKING }
@@ -133,6 +134,7 @@ val MOCK_TRACKED = listOf(
         productName = "Oversized Cashmere Trench",
         merchant = "ZARA",
         currentPrice = 12999.0,
+        targetPrice = 11499.0,
         productUrl = "",
         trackedAt = "1w ago"
     ),
@@ -142,6 +144,7 @@ val MOCK_TRACKED = listOf(
         productName = "Minimalist Linen Blazer",
         merchant = "MANGO",
         currentPrice = 6590.0,
+        targetPrice = 5990.0,
         productUrl = "",
         trackedAt = "2w ago"
     )
@@ -551,6 +554,63 @@ fun TrackedProductCard(
     val formatter = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
     formatter.maximumFractionDigits = 0
     val formattedPrice = formatter.format(product.currentPrice)
+    val targetFormatted = product.targetPrice?.let { formatter.format(it) }
+
+    var showEditTargetDialog by remember { mutableStateOf(false) }
+    var targetInput by remember(product.targetPrice) {
+        mutableStateOf(product.targetPrice?.toInt()?.toString() ?: (product.currentPrice * 0.9).toInt().toString())
+    }
+
+    if (showEditTargetDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditTargetDialog = false },
+            title = {
+                Text("Set Target Price", fontWeight = FontWeight.Bold, color = Charcoal)
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Alert me when ${product.productName} drops below:",
+                        fontSize = 13.sp,
+                        color = SoftCharcoal
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = targetInput,
+                        onValueChange = { targetInput = it.filter { ch -> ch.isDigit() } },
+                        prefix = { Text("₹", color = Charcoal, fontWeight = FontWeight.SemiBold) },
+                        label = { Text("Target Price (INR)") },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = DeepForest,
+                            unfocusedBorderColor = WarmGray,
+                            focusedLabelColor = DeepForest
+                        )
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val parsed = targetInput.toDoubleOrNull()
+                        if (parsed != null && parsed > 0) {
+                            OnMeStyleRepository.setTargetPrice(product.id, parsed)
+                        }
+                        showEditTargetDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Charcoal, contentColor = White)
+                ) {
+                    Text("Save Target")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditTargetDialog = false }) {
+                    Text("Cancel", color = SoftCharcoal)
+                }
+            },
+            containerColor = WarmIvory
+        )
+    }
 
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -631,7 +691,25 @@ fun TrackedProductCard(
                     fontWeight = FontWeight.Bold,
                     color = Charcoal
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                if (targetFormatted != null) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Target: $targetFormatted",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = DeepForest
+                    )
+                }
+                Text(
+                    text = if (targetFormatted != null) "Edit target" else "Set target",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = SoftCharcoal,
+                    modifier = Modifier
+                        .clickable { showEditTargetDialog = true }
+                        .padding(top = 2.dp)
+                )
+                Spacer(modifier = Modifier.height(6.dp))
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = "View Product",

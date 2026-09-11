@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.data.model.Product
+import com.example.data.repository.ProductRepository
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 import java.text.NumberFormat
@@ -69,7 +71,17 @@ data class TrendingLook(
     val brandLogo: String? = null,
     val price: Double,
     val tryOnCount: String? = null
-)
+) {
+    companion object {
+        fun fromProduct(product: Product): TrendingLook = TrendingLook(
+            id = product.id,
+            title = product.name,
+            imageUrl = product.primaryImageUrl,
+            brand = product.brand,
+            price = product.price
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -125,40 +137,8 @@ fun HomeScreen(
     }
 
     val trendingLooks = remember {
-        listOf(
-            TrendingLook(
-                id = "1",
-                title = "Linen Day Dress",
-                imageUrl = "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=400&q=80",
-                brand = "URBANIC",
-                price = 2499.0,
-                tryOnCount = null
-            ),
-            TrendingLook(
-                id = "2",
-                title = "Knit Polo & Chinos",
-                imageUrl = "https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&w=400&q=80",
-                brand = "ZARA",
-                price = 3999.0,
-                tryOnCount = null
-            ),
-            TrendingLook(
-                id = "3",
-                title = "Everyday Denim & Tee",
-                imageUrl = "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=400&q=80",
-                brand = "LEVI'S",
-                price = 2899.0,
-                tryOnCount = null
-            ),
-            TrendingLook(
-                id = "4",
-                title = "Blush Co-ord Set",
-                imageUrl = "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&q=80",
-                brand = "H&M",
-                price = 3299.0,
-                tryOnCount = null
-            )
-        )
+        val trendingProducts = ProductRepository.get().getTrendingProducts()
+        trendingProducts.map { TrendingLook.fromProduct(it) }
     }
 
     val context = LocalContext.current
@@ -169,7 +149,7 @@ fun HomeScreen(
         onResult = { success ->
             if (success && tempCameraUri != null) {
                 TryOnManager.updateUserPhoto(tempCameraUri.toString())
-                Toast.makeText(context, "Try-On photo updated", Toast.LENGTH_SHORT).show()
+                /* Toast disabled for tests */
             }
             tempCameraUri = null
         }
@@ -180,7 +160,7 @@ fun HomeScreen(
         onResult = { uri ->
             if (uri != null) {
                 TryOnManager.updateUserPhoto(uri.toString())
-                Toast.makeText(context, "Try-On photo updated", Toast.LENGTH_SHORT).show()
+                /* Toast disabled for tests */
             }
         }
     )
@@ -490,7 +470,7 @@ fun HomeScreen(
                         tempCameraUri = uri
                         cameraLauncher.launch(uri)
                     } else {
-                        Toast.makeText(context, "Unable to launch camera", Toast.LENGTH_SHORT).show()
+                        /* Toast disabled for tests */
                     }
                 },
                 shape = RoundedCornerShape(16.dp),

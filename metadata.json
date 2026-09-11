@@ -1,6 +1,6 @@
 {
-  "name": "OnMe",
-  "description": "AI Virtual Outfit Try-On App",
+  "name": "TiHin",
+  "description": "TiHin - Try. Love. Buy. AI Virtual Outfit Try-On App",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

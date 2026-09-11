@@ -1,9 +1,12 @@
 package com.example
 
+import com.example.credit.repository.CreditRepositoryProvider
+
 import com.example.ui.OnMeStyleRepository
 import com.example.ui.TrackedProduct
 import com.example.ui.TryOnResult
 import org.junit.Assert.*
+import com.example.credit.repository.FakeCreditRepository
 import org.junit.Before
 import org.junit.Test
 
@@ -11,6 +14,7 @@ class StateIntegrityTest {
 
     @Before
     fun setUp() {
+        com.example.credit.repository.CreditRepositoryProvider.setForTesting(FakeCreditRepository())
         OnMeStyleRepository.resetForTesting()
     }
 

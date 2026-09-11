@@ -62,6 +62,9 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.data.datasource.MockProductDataSource
+import com.example.data.model.Product
+import com.example.data.repository.ProductRepository
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -69,115 +72,16 @@ import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
-data class DiscoverProduct(
-    val id: String,
-    val name: String,
-    val merchant: String,
-    val productImages: List<String>,
-    val description: String? = null,
-    val styleTip: String? = null,
-    val rating: Double? = null,
-    val reviewCount: Int? = null,
-    val price: Double,
-    val cardHeight: Int,
-    val isFavourite: Boolean = false
-) {
-    // Backward-compatible primary merchant image accessor
-    val imageUrl: String
-        get() = productImages.firstOrNull() ?: ""
-}
+/**
+ * Backward-compatible typealias pointing to the canonical Product domain model.
+ */
+typealias DiscoverProduct = Product
 
-val MOCK_DISCOVER_PRODUCTS = listOf(
-    DiscoverProduct(
-        id = "1",
-        name = "Oversized Cashmere Trench",
-        merchant = "ZARA",
-        productImages = listOf(
-            "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=800&q=80"
-        ),
-        description = "Spun from ultra-soft Mongolian cashmere with an elegant draped storm flap and tonal horn buttons.",
-        styleTip = "Layer open over high-waisted wool trousers and pointed ankle boots for a structured silhouette.",
-        rating = 4.8,
-        reviewCount = 124,
-        price = 12999.0,
-        cardHeight = 260
-    ),
-    DiscoverProduct(
-        id = "2",
-        name = "Tailored Wool Overcoat",
-        merchant = "H&M",
-        productImages = listOf(
-            "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&w=800&q=80"
-        ),
-        description = "Structured double-breasted silhouette cut from premium recycled wool blend.",
-        styleTip = "Pair with an oatmeal rollneck and leather loafers for timeless winter sophistication.",
-        rating = 4.6,
-        reviewCount = 89,
-        price = 8999.0,
-        cardHeight = 220
-    ),
-    DiscoverProduct(
-        id = "3",
-        name = "Minimalist Linen Blazer",
-        merchant = "MANGO",
-        productImages = listOf(
-            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=80"
-        ),
-        description = "Breathable pure European linen tailored with relaxed notch lapels and natural corozo buttons.",
-        styleTip = "Wear cuffs slightly pushed up with matching wide-leg trousers and gold hoops.",
-        rating = 4.9,
-        reviewCount = 210,
-        price = 6590.0,
-        cardHeight = 280
-    ),
-    DiscoverProduct(
-        id = "4",
-        name = "Structured Oxford & Trousers",
-        merchant = "ZARA",
-        productImages = listOf(
-            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80"
-        ),
-        description = "Classic crisp cotton Oxford pairing seamlessly with straight-leg pleats.",
-        styleTip = "Half-tuck into belted charcoal trousers for an effortlessly sharp weekday profile.",
-        rating = 4.5,
-        reviewCount = 67,
-        price = 4590.0,
-        cardHeight = 210
-    ),
-    DiscoverProduct(
-        id = "5",
-        name = "Emerald Satin Maxi Dress",
-        merchant = "URBANIC",
-        productImages = listOf(
-            "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80"
-        ),
-        description = "Fluid bias-cut lustrous satin dress with an open cowl back and subtle train.",
-        styleTip = "Style minimally with delicate barely-there metallic sandals and a sleek low chignon.",
-        rating = 4.7,
-        reviewCount = 148,
-        price = 3790.0,
-        cardHeight = 250
-    ),
-    DiscoverProduct(
-        id = "6",
-        name = "Pastel Co-ord Loungewear",
-        merchant = "ASOS",
-        productImages = listOf(
-            "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80"
-        ),
-        description = "Soft waffle-knit matching ensemble designed for effortless elevated lounging.",
-        styleTip = "Ideal for off-duty days; finish the look with chunky slides and a slouchy tote.",
-        price = 3290.0,
-        cardHeight = 230
-    )
-)
+/**
+ * Backward-compatible reference to the canonical catalog products in MockProductDataSource.
+ */
+val MOCK_DISCOVER_PRODUCTS: List<Product>
+    get() = MockProductDataSource.getProducts()
 
 enum class DiscoverTab(val title: String) {
     TRENDING("Trending Now"),
@@ -195,13 +99,13 @@ enum class DiscoverTab(val title: String) {
  * - BEST_SELLERS: Ranks by available sales/feedback volume (reviewCount descending). Products without review counts follow in natural order.
  * - JUST_IN: Real new arrival ordering (reverses initial catalogue index so newest entries appear first).
  */
-fun getProductsForTab(products: List<DiscoverProduct>, tab: DiscoverTab): List<DiscoverProduct> {
+fun getProductsForTab(products: List<Product>, tab: DiscoverTab): List<Product> {
     return when (tab) {
         DiscoverTab.TRENDING -> products
         DiscoverTab.MOST_LOVED -> {
             // First show user-favourited items, then items with highest review count (existing real feedback data)
             products.sortedWith(
-                compareByDescending<DiscoverProduct> { it.isFavourite }
+                compareByDescending<Product> { it.isFavourite }
                     .thenByDescending { it.reviewCount ?: 0 }
             )
         }
@@ -260,8 +164,10 @@ fun DiscoverScreen(navController: NavController) {
         selectedProduct = null
     }
 
-    val products = remember(OnMeStyleRepository.favouriteProductIds) {
-        MOCK_DISCOVER_PRODUCTS.map { product ->
+    val productRepository = remember { ProductRepository.get() }
+    val baseProducts = remember { productRepository.getProducts() }
+    val products = remember(baseProducts, OnMeStyleRepository.favouriteProductIds) {
+        baseProducts.map { product ->
             product.copy(isFavourite = OnMeStyleRepository.isFavourite(product.id))
         }
     }

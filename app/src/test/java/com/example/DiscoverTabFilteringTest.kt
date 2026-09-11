@@ -1,11 +1,14 @@
 package com.example
 
+import com.example.credit.repository.CreditRepositoryProvider
+
 import com.example.ui.DiscoverProduct
 import com.example.ui.DiscoverTab
 import com.example.ui.MOCK_DISCOVER_PRODUCTS
 import com.example.ui.OnMeStyleRepository
 import com.example.ui.getProductsForTab
 import org.junit.Assert.*
+import com.example.credit.repository.FakeCreditRepository
 import org.junit.Before
 import org.junit.Test
 
@@ -13,6 +16,7 @@ class DiscoverTabFilteringTest {
 
     @Before
     fun setUp() {
+        com.example.credit.repository.CreditRepositoryProvider.setForTesting(FakeCreditRepository())
         OnMeStyleRepository.resetForTesting()
     }
 

@@ -4,6 +4,7 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.navigation.compose.rememberNavController
 import com.example.ui.*
+import com.example.credit.repository.CreditRepositoryProvider
 import com.example.ui.theme.MyApplicationTheme
 import org.junit.Assert.*
 import org.junit.Rule

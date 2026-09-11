@@ -14,11 +14,15 @@ sealed class Screen(val route: String) {
     object Result : Screen("result")
     object Looks : Screen("looks")
     object TriesCredits : Screen("tries_credits")
+    object EditProfile : Screen("edit_profile")
+    object SharedProductError : Screen("shared_product_error")
 }
 
 @Composable
-fun AppNavigation(startDestination: String = Screen.Splash.route) {
-    val navController = rememberNavController()
+fun AppNavigation(
+    startDestination: String = Screen.Splash.route,
+    navController: androidx.navigation.NavHostController = rememberNavController()
+) {
     NavHost(navController = navController, startDestination = startDestination) {
         composable(Screen.Splash.route) { SplashScreen(navController) }
         composable(Screen.Onboarding.route) { OnboardingScreen(navController) }
@@ -27,5 +31,7 @@ fun AppNavigation(startDestination: String = Screen.Splash.route) {
         composable(Screen.Processing.route) { ProcessingScreen(navController) }
         composable(Screen.Result.route) { ResultScreen(navController) }
         composable(Screen.TriesCredits.route) { CreditStoreScreen(navController) }
+        composable(Screen.EditProfile.route) { EditProfileScreen(navController) }
+        composable(Screen.SharedProductError.route) { com.example.share.ui.SharedProductErrorScreen(navController) }
     }
 }

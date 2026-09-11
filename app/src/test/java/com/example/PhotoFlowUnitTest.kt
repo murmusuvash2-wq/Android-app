@@ -1,6 +1,8 @@
 package com.example
 
 import com.example.ui.SessionManager
+import com.example.credit.repository.CreditRepositoryProvider
+import com.example.credit.repository.FakeCreditRepository
 import com.example.ui.TryOnManager
 import org.junit.Assert.*
 import org.junit.Before
@@ -10,8 +12,9 @@ class PhotoFlowUnitTest {
 
     @Before
     fun setUp() {
+        com.example.credit.repository.CreditRepositoryProvider.setForTesting(FakeCreditRepository())
         SessionManager.isGuest = false
-        SessionManager.credits = 10
+        SessionManager.resetForTesting(initialFree = 10, initialPurchased = 0)
         SessionManager.releaseHeldCredit()
         TryOnManager.selectedUserPhotoUri = ""
         TryOnManager.selectedProductId = "prod_default"

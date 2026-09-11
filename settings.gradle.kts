@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "OnMe"
+rootProject.name = "TiHin"
 
 include(":app")

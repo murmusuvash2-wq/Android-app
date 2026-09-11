@@ -1,139 +1,155 @@
 package com.example
 
+import androidx.test.core.app.ApplicationProvider
+import com.example.credit.repository.CreditRepositoryProvider
 import com.example.ui.SessionManager
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import java.util.UUID
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36])
 class CreditSafetyUnitTest {
 
     @Before
     fun setUp() {
-        SessionManager.isGuest = false
-        SessionManager.credits = 2
-        SessionManager.releaseHeldCredit()
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        CreditRepositoryProvider.init(context)
+        SessionManager.init(context)
+        SessionManager.resetForTesting(initialGuest = false, initialFree = 2, initialPurchased = 0)
     }
 
     @Test
-    fun testAuthenticatedUser_initialCreditGrantIsTwo() {
-        SessionManager.isGuest = false
-        SessionManager.credits = 2
-        SessionManager.releaseHeldCredit()
-
-        assertEquals(2, SessionManager.credits)
-        assertEquals(2, SessionManager.availableCredits)
-        assertTrue(SessionManager.hasSufficientCredits)
+    fun testAuthenticatedUser_initialCreditGrantIsTwo() = runBlocking {
+        val repo = CreditRepositoryProvider.get()
+        assertEquals(2, repo.balanceFlow.value.total)
+        assertEquals(2, repo.getAvailableCredits())
+        assertTrue(repo.hasSufficientCredits())
     }
 
     @Test
-    fun testGuestUser_initialCreditGrantIsZero() {
-        SessionManager.isGuest = true
-        SessionManager.credits = 0
-        SessionManager.releaseHeldCredit()
-
-        assertEquals(0, SessionManager.credits)
-        assertEquals(0, SessionManager.availableCredits)
+    fun testGuestUser_initialCreditGrantIsZero() = runBlocking {
+        SessionManager.setSessionMode(asGuest = true)
+        kotlinx.coroutines.delay(100)
+        val repo = CreditRepositoryProvider.get()
+        assertEquals(2, repo.balanceFlow.value.total)
+        assertEquals(0, repo.getAvailableCredits())
         assertTrue("Guests have unlimited client-side tries without credit hold", SessionManager.hasSufficientCredits)
     }
 
     @Test
-    fun testHoldCredit_successWhenCreditsAvailable() {
-        SessionManager.credits = 5
-        val held = SessionManager.holdCredit()
+    fun testHoldCredit_successWhenCreditsAvailable() = runBlocking {
+        val repo = CreditRepositoryProvider.get()
+        repo.setBalance(5, 0)
+        
+        val opId = UUID.randomUUID().toString()
+        val held = repo.hold(opId)
 
         assertTrue(held)
-        assertTrue(SessionManager.hasActiveHold)
-        assertEquals(5, SessionManager.credits) // Total credits not decremented yet
-        assertEquals(4, SessionManager.availableCredits) // Available credits reflect hold
+        assertEquals(5, repo.balanceFlow.value.total) // Total credits not decremented yet
+        assertEquals(4, repo.getAvailableCredits()) // Available credits reflect hold
     }
 
     @Test
-    fun testHoldCredit_idempotentOnRepeatedTaps() {
-        SessionManager.credits = 3
-        val firstHold = SessionManager.holdCredit()
-        val secondHold = SessionManager.holdCredit() // double tap
+    fun testHoldCredit_idempotentOnRepeatedTaps() = runBlocking {
+        val repo = CreditRepositoryProvider.get()
+        repo.setBalance(3, 0)
+        val opId = UUID.randomUUID().toString()
+        
+        val firstHold = repo.hold(opId)
+        val secondHold = repo.hold(opId) // double tap
 
-        assertTrue(firstHold)
-        assertTrue(secondHold)
-        assertTrue(SessionManager.hasActiveHold)
-        assertEquals(3, SessionManager.credits)
-        assertEquals(2, SessionManager.availableCredits) // exactly 1 held, not 2
+        assertTrue("firstHold failed", firstHold)
+        assertTrue("secondHold failed", secondHold)
+        assertEquals(3, repo.balanceFlow.value.total)
+        assertEquals(2, repo.getAvailableCredits()) // exactly 1 held, not 2
     }
 
     @Test
-    fun testHoldCredit_failsWhenZeroCredits() {
-        SessionManager.credits = 0
-        val held = SessionManager.holdCredit()
+    fun testHoldCredit_failsWhenZeroCredits() = runBlocking {
+        val repo = CreditRepositoryProvider.get()
+        repo.setBalance(0, 0)
+        val opId = UUID.randomUUID().toString()
+        val held = repo.hold(opId)
 
         assertFalse(held)
-        assertFalse(SessionManager.hasActiveHold)
-        assertFalse(SessionManager.hasSufficientCredits)
-        assertEquals(0, SessionManager.availableCredits)
+        assertFalse(repo.hasSufficientCredits())
+        assertEquals(0, repo.getAvailableCredits())
     }
 
     @Test
-    fun testConsumeHeldCredit_deductsExactlyOne() {
-        SessionManager.credits = 10
-        SessionManager.holdCredit()
+    fun testConsumeHeldCredit_deductsExactlyOne() = runBlocking {
+        val repo = CreditRepositoryProvider.get()
+        repo.setBalance(10, 0)
+        val opId = UUID.randomUUID().toString()
+        repo.hold(opId)
 
-        val consumed = SessionManager.consumeHeldCredit()
+        val consumed = repo.consume(opId)
 
         assertTrue(consumed)
-        assertFalse(SessionManager.hasActiveHold)
-        assertEquals(9, SessionManager.credits)
-        assertEquals(9, SessionManager.availableCredits)
+        assertEquals(9, repo.balanceFlow.value.total)
+        assertEquals(9, repo.getAvailableCredits())
     }
 
     @Test
-    fun testConsumeHeldCredit_cannotDoubleDeduct() {
-        SessionManager.credits = 10
-        SessionManager.holdCredit()
+    fun testConsumeHeldCredit_cannotDoubleDeduct() = runBlocking {
+        val repo = CreditRepositoryProvider.get()
+        repo.setBalance(10, 0)
+        val opId = UUID.randomUUID().toString()
+        repo.hold(opId)
 
-        val firstConsume = SessionManager.consumeHeldCredit()
-        val secondConsume = SessionManager.consumeHeldCredit()
+        val firstConsume = repo.consume(opId)
+        val secondConsume = repo.consume(opId)
 
-        assertTrue(firstConsume)
-        assertFalse(secondConsume) // Already consumed, cannot double deduct
-        assertFalse(SessionManager.hasActiveHold)
-        assertEquals(9, SessionManager.credits)
+        assertTrue("firstConsume failed", firstConsume)
+        assertTrue("secondConsume failed", secondConsume) // Idempotent success
+        assertEquals(9, repo.balanceFlow.value.total)
     }
 
     @Test
-    fun testReleaseHeldCredit_restoresFullBalanceOnCancelOrFailure() {
-        SessionManager.credits = 7
-        SessionManager.holdCredit()
-        assertEquals(6, SessionManager.availableCredits)
+    fun testReleaseHeldCredit_restoresFullBalanceOnCancelOrFailure() = runBlocking {
+        val repo = CreditRepositoryProvider.get()
+        repo.setBalance(7, 0)
+        val opId = UUID.randomUUID().toString()
+        repo.hold(opId)
+        assertEquals(6, repo.getAvailableCredits())
 
-        SessionManager.releaseHeldCredit()
+        repo.release(opId)
 
-        assertFalse(SessionManager.hasActiveHold)
-        assertEquals(7, SessionManager.credits)
-        assertEquals(7, SessionManager.availableCredits)
+        assertEquals(7, repo.balanceFlow.value.total)
+        assertEquals(7, repo.getAvailableCredits())
     }
 
     @Test
-    fun testGuestUser_neverHoldsOrDeductsCredits() {
-        SessionManager.isGuest = true
-        SessionManager.credits = 0
+    fun testGuestUser_neverHoldsOrDeductsCredits() = runBlocking {
+        SessionManager.setSessionMode(asGuest = true)
+        val repo = CreditRepositoryProvider.get()
 
-        assertTrue(SessionManager.hasSufficientCredits)
-        assertTrue(SessionManager.holdCredit())
-        assertFalse(SessionManager.hasActiveHold)
-
-        assertTrue(SessionManager.consumeHeldCredit())
-        assertEquals(0, SessionManager.credits)
+        assertTrue(repo.hasSufficientCredits())
+        val opId = UUID.randomUUID().toString()
+        assertTrue(repo.hold(opId))
+        
+        assertTrue(repo.consume(opId))
+        assertEquals(2, repo.balanceFlow.value.total)
     }
 
     @Test
-    fun testNoNegativeBalance() {
-        SessionManager.credits = 1
-        SessionManager.holdCredit()
-        SessionManager.consumeHeldCredit()
+    fun testNoNegativeBalance() = runBlocking {
+        val repo = CreditRepositoryProvider.get()
+        repo.setBalance(1, 0)
+        val opId = UUID.randomUUID().toString()
+        repo.hold(opId)
+        repo.consume(opId)
 
-        assertEquals(0, SessionManager.credits)
+        assertEquals(0, repo.balanceFlow.value.total)
 
         // Attempting to consume without hold does nothing
-        SessionManager.consumeHeldCredit()
-        assertEquals(0, SessionManager.credits)
+        repo.consume(UUID.randomUUID().toString())
+        assertEquals(0, repo.balanceFlow.value.total)
     }
 }

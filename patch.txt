@@ -1,0 +1,31 @@
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Surface(
+                                onClick = {
+                                    val uri = TryOnManager.createTempCameraUri(context)
+                                    if (uri != null) {
+                                        tempCameraUri = uri
+                                        cameraLauncher.launch(uri)
+                                    }
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                color = Charcoal,
+                                modifier = Modifier.height(48.dp).weight(1f)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text("Take Photo", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                                }
+                            }
+                            Surface(
+                                onClick = {
+                                    galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                color = SurfaceVariantColor,
+                                border = BorderStroke(1.dp, WarmGray),
+                                modifier = Modifier.height(48.dp).weight(1f)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text("Choose Photo", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Charcoal)
+                                }
+                            }
+                        }

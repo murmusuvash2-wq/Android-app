@@ -11,7 +11,7 @@ import com.example.tryon.model.TryOnResult
  * - Does not depend on Jetpack Compose UI.
  * - Does not manipulate Android navigation.
  * - Does not own or mutate credits (managed strictly by SessionManager).
- * - Does not persist user favourites or price tracking (managed by OnMeStyleRepository).
+ * - Does not persist user favourites or price tracking (managed by TiHinStyleRepository).
  */
 interface TryOnService {
 

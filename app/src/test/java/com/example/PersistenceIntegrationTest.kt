@@ -45,7 +45,7 @@ class PersistenceIntegrationTest {
             context = context
         )
         UserPhotosRepository.resetForTesting(context = context)
-        OnMeStyleRepository.resetForTesting(context = context)
+        TiHinStyleRepository.resetForTesting(context = context)
     }
 
     @After
@@ -117,11 +117,11 @@ kotlinx.coroutines.runBlocking {
     fun test3_favouritePersistenceAcrossRestarts() {
 kotlinx.coroutines.runBlocking {
 
-        OnMeStyleRepository.initSync(context)
-        assertFalse(OnMeStyleRepository.isFavourite("p_dress_101"))
+        TiHinStyleRepository.initSync(context)
+        assertFalse(TiHinStyleRepository.isFavourite("p_dress_101"))
 
         // Favourite product
-        OnMeStyleRepository.toggleFavourite(
+        TiHinStyleRepository.toggleFavourite(
             productId = "p_dress_101",
             productName = "Silk Evening Gown",
             merchant = "Zara",
@@ -130,14 +130,14 @@ kotlinx.coroutines.runBlocking {
             context = context,
             synchronous = true
         )
-        assertTrue(OnMeStyleRepository.isFavourite("p_dress_101"))
-        assertTrue(OnMeStyleRepository.isPriceTracked("p_dress_101"))
+        assertTrue(TiHinStyleRepository.isFavourite("p_dress_101"))
+        assertTrue(TiHinStyleRepository.isPriceTracked("p_dress_101"))
 
         // Simulate app restart
-        OnMeStyleRepository.initSync(context)
+        TiHinStyleRepository.initSync(context)
 
-        assertTrue(OnMeStyleRepository.isFavourite("p_dress_101"))
-        assertTrue(OnMeStyleRepository.isPriceTracked("p_dress_101"))
+        assertTrue(TiHinStyleRepository.isFavourite("p_dress_101"))
+        assertTrue(TiHinStyleRepository.isPriceTracked("p_dress_101"))
     
 }
 }
@@ -149,20 +149,20 @@ kotlinx.coroutines.runBlocking {
     fun test4_unfavouritePersistenceAcrossRestarts() {
 kotlinx.coroutines.runBlocking {
 
-        OnMeStyleRepository.initSync(context)
+        TiHinStyleRepository.initSync(context)
 
         // Favourite first
-        OnMeStyleRepository.setFavourite(productId = "p_shoe_202", isFav = true, context = context, synchronous = true)
-        assertTrue(OnMeStyleRepository.isFavourite("p_shoe_202"))
+        TiHinStyleRepository.setFavourite(productId = "p_shoe_202", isFav = true, context = context, synchronous = true)
+        assertTrue(TiHinStyleRepository.isFavourite("p_shoe_202"))
 
         // Unfavourite
-        OnMeStyleRepository.setFavourite(productId = "p_shoe_202", isFav = false, context = context, synchronous = true)
-        assertFalse(OnMeStyleRepository.isFavourite("p_shoe_202"))
+        TiHinStyleRepository.setFavourite(productId = "p_shoe_202", isFav = false, context = context, synchronous = true)
+        assertFalse(TiHinStyleRepository.isFavourite("p_shoe_202"))
 
         // Simulate app restart
-        OnMeStyleRepository.initSync(context)
+        TiHinStyleRepository.initSync(context)
 
-        assertFalse(OnMeStyleRepository.isFavourite("p_shoe_202"))
+        assertFalse(TiHinStyleRepository.isFavourite("p_shoe_202"))
     
 }
 }
@@ -174,10 +174,10 @@ kotlinx.coroutines.runBlocking {
     fun test5_priceTrackingAndTargetPriceAcrossRestarts() {
 kotlinx.coroutines.runBlocking {
 
-        OnMeStyleRepository.initSync(context)
+        TiHinStyleRepository.initSync(context)
 
         // Track a product
-        OnMeStyleRepository.setPriceTracking(
+        TiHinStyleRepository.setPriceTracking(
             productId = "p_jacket_303",
             enabled = true,
             productName = "Leather Biker Jacket",
@@ -187,22 +187,22 @@ kotlinx.coroutines.runBlocking {
             context = context,
             synchronous = true
         )
-        assertTrue(OnMeStyleRepository.isPriceTracked("p_jacket_303"))
+        assertTrue(TiHinStyleRepository.isPriceTracked("p_jacket_303"))
 
         // Set target price to 4499.0
-        OnMeStyleRepository.setTargetPrice(
+        TiHinStyleRepository.setTargetPrice(
             productId = "p_jacket_303",
             targetPrice = 4499.0,
             context = context,
             synchronous = true
         )
-        assertEquals(4499.0, OnMeStyleRepository.getTargetPrice("p_jacket_303")!!, 0.01)
+        assertEquals(4499.0, TiHinStyleRepository.getTargetPrice("p_jacket_303")!!, 0.01)
 
         // Simulate app restart
-        OnMeStyleRepository.initSync(context)
+        TiHinStyleRepository.initSync(context)
 
-        assertTrue(OnMeStyleRepository.isPriceTracked("p_jacket_303"))
-        assertEquals(4499.0, OnMeStyleRepository.getTargetPrice("p_jacket_303")!!, 0.01)
+        assertTrue(TiHinStyleRepository.isPriceTracked("p_jacket_303"))
+        assertEquals(4499.0, TiHinStyleRepository.getTargetPrice("p_jacket_303")!!, 0.01)
     
 }
 }
@@ -236,7 +236,7 @@ kotlinx.coroutines.runBlocking {
     fun test7_savedTryOnResultPersistenceAcrossRestarts() {
 kotlinx.coroutines.runBlocking {
 
-        OnMeStyleRepository.initSync(context)
+        TiHinStyleRepository.initSync(context)
 
         val result = TryOnResult(
             id = "res_saved_999",
@@ -252,16 +252,16 @@ kotlinx.coroutines.runBlocking {
             cardHeight = 280
         )
 
-        OnMeStyleRepository.saveResult(result, context, synchronous = true)
-        assertEquals(1, OnMeStyleRepository.savedResults.size)
-        assertEquals("res_saved_999", OnMeStyleRepository.savedResults.first().id)
+        TiHinStyleRepository.saveResult(result, context, synchronous = true)
+        assertEquals(1, TiHinStyleRepository.savedResults.size)
+        assertEquals("res_saved_999", TiHinStyleRepository.savedResults.first().id)
 
         // Simulate app restart
-        OnMeStyleRepository.initSync(context)
+        TiHinStyleRepository.initSync(context)
 
-        assertEquals(1, OnMeStyleRepository.savedResults.size)
-        assertEquals("res_saved_999", OnMeStyleRepository.savedResults.first().id)
-        assertEquals("https://example.com/result_999.jpg", OnMeStyleRepository.savedResults.first().resultImage)
+        assertEquals(1, TiHinStyleRepository.savedResults.size)
+        assertEquals("res_saved_999", TiHinStyleRepository.savedResults.first().id)
+        assertEquals("https://example.com/result_999.jpg", TiHinStyleRepository.savedResults.first().resultImage)
     
 }
 }

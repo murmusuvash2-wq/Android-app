@@ -157,21 +157,21 @@ fun LooksScreen(
     requestedTab: LooksTab = LooksTab.RECENT,
     onTabChanged: (LooksTab) -> Unit = {}
 ) {
-    val saved = OnMeStyleRepository.savedResults
-    val results = remember(saved, SessionManager.isGuest, OnMeStyleRepository.favouriteProductIds) {
+    val saved = TiHinStyleRepository.savedResults
+    val results = remember(saved, SessionManager.isGuest, TiHinStyleRepository.favouriteProductIds) {
         if (SessionManager.isGuest) emptyList()
         else {
             val combined = saved + MOCK_RESULTS.filterNot { mock ->
                 saved.any { it.id == mock.id || (it.productId == mock.productId && it.resultImage == mock.resultImage) }
             }
             combined.map { item ->
-                item.copy(isFavourite = OnMeStyleRepository.isFavourite(item.productId))
+                item.copy(isFavourite = TiHinStyleRepository.isFavourite(item.productId))
             }
         }
     }
-    val tracked = remember(SessionManager.isGuest, OnMeStyleRepository.trackedProductIds, OnMeStyleRepository.customTrackedProducts) {
+    val tracked = remember(SessionManager.isGuest, TiHinStyleRepository.trackedProductIds, TiHinStyleRepository.customTrackedProducts) {
         if (SessionManager.isGuest) emptyList()
-        else OnMeStyleRepository.getActiveTrackedProducts(MOCK_TRACKED)
+        else TiHinStyleRepository.getActiveTrackedProducts(MOCK_TRACKED)
     }
     var selectedTab by rememberSaveable(stateSaver = LooksTabSaver) { mutableStateOf(requestedTab) }
 
@@ -305,7 +305,7 @@ fun LooksScreen(
                                 navController.navigate(Screen.Result.route)
                             },
                             onToggleFavourite = { result ->
-                                OnMeStyleRepository.toggleFavourite(
+                                TiHinStyleRepository.toggleFavourite(
                                     productId = result.productId,
                                     productName = result.productName,
                                     merchant = result.productBrand,
@@ -338,7 +338,7 @@ fun LooksScreen(
                                 navController.navigate(Screen.Result.route)
                             },
                             onToggleFavourite = { result ->
-                                OnMeStyleRepository.toggleFavourite(
+                                TiHinStyleRepository.toggleFavourite(
                                     productId = result.productId,
                                     productName = result.productName,
                                     merchant = result.productBrand,
@@ -594,7 +594,7 @@ fun TrackedProductCard(
                     onClick = {
                         val parsed = targetInput.toDoubleOrNull()
                         if (parsed != null && parsed > 0) {
-                            OnMeStyleRepository.setTargetPrice(product.id, parsed)
+                            TiHinStyleRepository.setTargetPrice(product.id, parsed)
                         }
                         showEditTargetDialog = false
                     },

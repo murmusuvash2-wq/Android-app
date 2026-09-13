@@ -19,6 +19,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
@@ -95,7 +96,7 @@ enum class DiscoverTab(val title: String) {
  *
  * Rules:
  * - TRENDING: Preserves default curated trending catalog order.
- * - MOST_LOVED: Prioritizes favourited items first (unified with OnMeStyleRepository), followed by reviewCount (customer feedback/admiration).
+ * - MOST_LOVED: Prioritizes favourited items first (unified with TiHinStyleRepository), followed by reviewCount (customer feedback/admiration).
  * - BEST_SELLERS: Ranks by available sales/feedback volume (reviewCount descending). Products without review counts follow in natural order.
  * - JUST_IN: Real new arrival ordering (reverses initial catalogue index so newest entries appear first).
  */
@@ -166,9 +167,9 @@ fun DiscoverScreen(navController: NavController) {
 
     val productRepository = remember { ProductRepository.get() }
     val baseProducts = remember { productRepository.getProducts() }
-    val products = remember(baseProducts, OnMeStyleRepository.favouriteProductIds) {
+    val products = remember(baseProducts, TiHinStyleRepository.favouriteProductIds) {
         baseProducts.map { product ->
-            product.copy(isFavourite = OnMeStyleRepository.isFavourite(product.id))
+            product.copy(isFavourite = TiHinStyleRepository.isFavourite(product.id))
         }
     }
 
@@ -285,7 +286,7 @@ fun DiscoverScreen(navController: NavController) {
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 8.dp),
+                                .padding(bottom = 16.dp),
                             placeholder = {
                                 Text("Search outfits, brands, products...", color = SecondaryText, fontSize = 14.sp)
                             },
@@ -309,14 +310,15 @@ fun DiscoverScreen(navController: NavController) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 8.dp),
+                                .padding(bottom = 24.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             DiscoverTab.values().forEach { tab ->
                                 val isSelected = selectedTab == tab
                                 Column(
                                     modifier = Modifier
-                                        .weight(1f)
+                                        .defaultMinSize(minHeight = 48.dp)
                                         .clickable(
                                             interactionSource = remember { MutableInteractionSource() },
                                             indication = null
@@ -324,8 +326,9 @@ fun DiscoverScreen(navController: NavController) {
                                             selectedTab = tab
                                             selectedProduct = null
                                         }
-                                        .padding(horizontal = 4.dp, vertical = 6.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
+                                        .padding(horizontal = 4.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
                                 ) {
                                     Text(
                                         text = tab.title,
@@ -339,7 +342,7 @@ fun DiscoverScreen(navController: NavController) {
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Box(
                                         modifier = Modifier
-                                            .fillMaxWidth(0.6f)
+                                            .width(24.dp)
                                             .height(2.dp)
                                             .background(
                                                 color = if (isSelected) DeepForest else Color.Transparent,
@@ -391,7 +394,7 @@ fun DiscoverScreen(navController: NavController) {
                                     if (SessionManager.isGuest) {
                                         showAccountPrompt = true
                                     } else {
-                                        val isFavedNow = OnMeStyleRepository.toggleFavourite(
+                                        val isFavedNow = TiHinStyleRepository.toggleFavourite(
                                             productId = product.id,
                                             productName = product.name,
                                             merchant = product.merchant,
@@ -409,7 +412,7 @@ fun DiscoverScreen(navController: NavController) {
                                                     duration = SnackbarDuration.Short
                                                 )
                                                 if (result == SnackbarResult.ActionPerformed) {
-                                                    OnMeStyleRepository.setFavourite(
+                                                    TiHinStyleRepository.setFavourite(
                                                         productId = product.id,
                                                         isFav = false
                                                     )
@@ -475,7 +478,7 @@ fun DiscoverScreen(navController: NavController) {
                                 if (SessionManager.isGuest) {
                                     showAccountPrompt = true
                                 } else {
-                                    val isFavedNow = OnMeStyleRepository.toggleFavourite(
+                                    val isFavedNow = TiHinStyleRepository.toggleFavourite(
                                         productId = product.id,
                                         productName = product.name,
                                         merchant = product.merchant,
@@ -491,7 +494,7 @@ fun DiscoverScreen(navController: NavController) {
                                                 duration = SnackbarDuration.Short
                                             )
                                             if (result == SnackbarResult.ActionPerformed) {
-                                                OnMeStyleRepository.setFavourite(
+                                                TiHinStyleRepository.setFavourite(
                                                     productId = product.id,
                                                     isFav = false
                                                 )
@@ -860,6 +863,7 @@ fun DiscoverEditorialCard(
                     border = BorderStroke(1.dp, BorderColor),
                     modifier = Modifier
                         .padding(8.dp)
+                        .minimumInteractiveComponentSize()
                         .size(36.dp)
                         .align(Alignment.TopEnd)
                 ) {
@@ -874,7 +878,7 @@ fun DiscoverEditorialCard(
                 }
             }
 
-            Column(modifier = Modifier.padding(12.dp)) {
+            Column(modifier = Modifier.padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 16.dp)) {
                 Text(
                     text = product.merchant.uppercase(),
                     style = BrandTagStyle,
@@ -909,7 +913,7 @@ fun DiscoverEditorialCard(
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(38.dp)
+                        .height(48.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.AutoAwesome,
@@ -961,7 +965,7 @@ fun PeekRevealCard(
 
     val pagerState = rememberPagerState(pageCount = { images.size })
 
-    // Auto-rotate images every 3.5s if not actively dragged or zoomed
+    // Track user interacting globally to disable auto-scroll
     var isUserInteracting by remember { mutableStateOf(false) }
 
     LaunchedEffect(pagerState, images.size, isUserInteracting) {
@@ -983,6 +987,7 @@ fun PeekRevealCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
         modifier = Modifier
             .fillMaxWidth()
+            .fillMaxHeight(0.85f) // Take up substantially more screen height
             .widthIn(max = 380.dp)
             .padding(horizontal = 16.dp, vertical = 16.dp)
             .clickable(
@@ -990,34 +995,75 @@ fun PeekRevealCard(
                 indication = null
             ) { /* Consume click inside card */ }
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            // 1. PRODUCT GALLERY VISUAL AREA (~60-65% visual dominance)
+        Column(modifier = Modifier.fillMaxSize()) {
+            // 1. PRODUCT GALLERY VISUAL AREA (Hero Image)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(390.dp)
+                    .weight(1f) // Expands to fill available vertical space
                     .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
                     .background(SurfaceVariantColor)
             ) {
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    userScrollEnabled = !isUserInteracting // Lock pager when zooming
                 ) { page ->
                     var scale by remember { mutableFloatStateOf(1f) }
+                    var offsetX by remember { mutableFloatStateOf(0f) }
+                    var offsetY by remember { mutableFloatStateOf(0f) }
+
+                    // Reset zoom state if pager changes to another page
+                    LaunchedEffect(pagerState.currentPage) {
+                        if (pagerState.currentPage != page) {
+                            scale = 1f
+                            offsetX = 0f
+                            offsetY = 0f
+                            if (isUserInteracting) isUserInteracting = false
+                        }
+                    }
 
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .pointerInput(Unit) {
-                                detectTransformGestures { _, _, zoom, _ ->
+                                detectTapGestures(
+                                    onDoubleTap = {
+                                        if (scale > 1f) {
+                                            scale = 1f
+                                            offsetX = 0f
+                                            offsetY = 0f
+                                            isUserInteracting = false
+                                        } else {
+                                            scale = 2f
+                                            isUserInteracting = true
+                                        }
+                                    }
+                                )
+                            }
+                            .pointerInput(Unit) {
+                                detectTransformGestures { _, pan, zoom, _ ->
                                     val newScale = (scale * zoom).coerceIn(1f, 3f)
                                     scale = newScale
-                                    isUserInteracting = newScale > 1.05f
+                                    if (scale > 1.05f) {
+                                        val maxX = (size.width * (scale - 1)) / 2f
+                                        val maxY = (size.height * (scale - 1)) / 2f
+                                        offsetX = (offsetX + pan.x).coerceIn(-maxX, maxX)
+                                        offsetY = (offsetY + pan.y).coerceIn(-maxY, maxY)
+                                        isUserInteracting = true
+                                    } else {
+                                        scale = 1f
+                                        offsetX = 0f
+                                        offsetY = 0f
+                                        isUserInteracting = false
+                                    }
                                 }
                             }
                             .graphicsLayer {
                                 scaleX = scale
                                 scaleY = scale
+                                translationX = offsetX
+                                translationY = offsetY
                             },
                         contentAlignment = Alignment.Center
                     ) {
@@ -1047,7 +1093,9 @@ fun PeekRevealCard(
                         shape = CircleShape,
                         color = Color.White.copy(alpha = 0.92f),
                         border = BorderStroke(1.dp, BorderColor),
-                        modifier = Modifier.size(38.dp)
+                        modifier = Modifier
+                            .minimumInteractiveComponentSize()
+                            .size(38.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
@@ -1065,7 +1113,9 @@ fun PeekRevealCard(
                         shape = CircleShape,
                         color = Color.White.copy(alpha = 0.92f),
                         border = BorderStroke(1.dp, BorderColor),
-                        modifier = Modifier.size(38.dp)
+                        modifier = Modifier
+                            .minimumInteractiveComponentSize()
+                            .size(38.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
@@ -1190,70 +1240,16 @@ fun PeekRevealCard(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-
-                    // Style Tip (Editorial highlight)
-                    if (!product.styleTip.isNullOrBlank()) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = SurfaceVariantColor,
-                            border = BorderStroke(1.dp, BorderColor.copy(alpha = 0.6f)),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.Top,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "STYLE TIP:",
-                                    style = MetadataCaptionStyle,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 10.sp,
-                                    color = DeepForest,
-                                    letterSpacing = 0.8.sp
-                                )
-                                Text(
-                                    text = product.styleTip,
-                                    style = MetadataCaptionStyle,
-                                    color = SecondaryText,
-                                    fontSize = 11.sp,
-                                    lineHeight = 15.sp,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-                    }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // 3. ACTIONS: Secondary "Buy ↗" and Primary "Try On"
+                // 3. ACTIONS: Primary "Try On" (60%) and Secondary "Buy ↗" (40%)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Secondary Action: Buy ↗
-                    OutlinedButton(
-                        onClick = onBuy,
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, BorderColor),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = SurfaceVariantColor,
-                            contentColor = PrimaryText
-                        ),
-                        modifier = Modifier.height(44.dp)
-                    ) {
-                        Text(
-                            text = "Buy ↗",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = PrimaryText
-                        )
-                    }
-
                     // Primary Action: Try On
                     Button(
                         onClick = onTryOn,
@@ -1263,8 +1259,8 @@ fun PeekRevealCard(
                             contentColor = Color.White
                         ),
                         modifier = Modifier
-                            .weight(1f)
-                            .height(44.dp)
+                            .weight(0.6f)
+                            .height(48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.AutoAwesome,
@@ -1277,7 +1273,30 @@ fun PeekRevealCard(
                             text = "Try On",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color.White
+                            color = Color.White,
+                            maxLines = 1
+                        )
+                    }
+
+                    // Secondary Action: Buy ↗
+                    OutlinedButton(
+                        onClick = onBuy,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, BorderColor),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = SurfaceVariantColor,
+                            contentColor = PrimaryText
+                        ),
+                        modifier = Modifier
+                            .weight(0.4f)
+                            .height(48.dp)
+                    ) {
+                        Text(
+                            text = "Buy ↗",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = PrimaryText,
+                            maxLines = 1
                         )
                     }
                 }

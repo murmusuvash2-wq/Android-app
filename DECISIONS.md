@@ -1,5 +1,7 @@
 # Locked Product Decisions
 
+**Brand Tagline:** "Try. Love. Buy."
+
 This document records the established product decisions, architectural constraints, and functional boundaries for the application. All future modifications must adhere strictly to these locked decisions.
 
 ---
@@ -83,9 +85,9 @@ The Result Screen represents the culmination of the try-on experience and follow
 
 ## 6. Provisional Branding
 
-- The name **"OnMe"** is **provisional** and **NOT final**.
+- The name **"TiHin"** is final.
 - The final brand name has not been locked.
-- Do **not** finalize permanent brand assets, logos, launcher icons, or splash identity around "OnMe" until official brand sign-off is provided.
+- Permanent brand assets, logos, launcher icons, and splash identity for "TiHin" are locked and approved.
 
 ---
 

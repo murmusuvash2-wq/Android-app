@@ -1,6 +1,7 @@
 package com.example.data.datasource
 
 import com.example.data.model.Product
+import com.example.data.model.HeroLook
 
 /**
  * In-memory mock data source providing the TiHin prototype product catalog.
@@ -181,4 +182,26 @@ object MockProductDataSource : ProductDataSource {
         return CATALOG_PRODUCTS.firstOrNull { it.id == resolvedId }
             ?: HOME_TRENDING_PRODUCTS.firstOrNull { it.id == resolvedId }
     }
+    val HERO_LOOKS: List<HeroLook> = listOf(
+        HeroLook(
+            id = "hero_1",
+            productId = "1",
+            hangerImage = CATALOG_PRODUCTS[0].productImages.getOrNull(1),
+            wornImage = CATALOG_PRODUCTS[0].productImages.getOrNull(0)
+        ),
+        HeroLook(
+            id = "hero_2",
+            productId = "3",
+            hangerImage = CATALOG_PRODUCTS[2].productImages.getOrNull(1),
+            wornImage = CATALOG_PRODUCTS[2].productImages.getOrNull(0)
+        ),
+        HeroLook(
+            id = "hero_3",
+            productId = "4",
+            hangerImage = CATALOG_PRODUCTS[3].productImages.getOrNull(1),
+            wornImage = CATALOG_PRODUCTS[3].productImages.getOrNull(0)
+        )
+    )
+
+    override fun getHeroLooks(): List<HeroLook> = HERO_LOOKS
 }

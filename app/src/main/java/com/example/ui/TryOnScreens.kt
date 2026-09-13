@@ -67,7 +67,7 @@ object TryOnManager {
     var reviewCount by mutableStateOf<Int?>(null)
     var ratingSource by mutableStateOf<String?>(null)
     val isPriceTracked: Boolean
-        get() = OnMeStyleRepository.isPriceTracked(selectedProductId)
+        get() = TiHinStyleRepository.isPriceTracked(selectedProductId)
 
     var selectedUserPhotoUri by mutableStateOf("")
     var generatedResultImageUri by mutableStateOf("")
@@ -186,6 +186,8 @@ object TryOnManager {
     }
 
     fun resetForTesting() {
+        generationJob?.cancel()
+        generationJob = null
         currentRequest = null
         currentResult = null
         generationStatus = GenerationStatus.Idle
@@ -565,7 +567,7 @@ fun ProcessingScreen(navController: NavController) {
     val tips = remember {
         listOf(
             "Style Tip\nMonochrome outfits can create a clean, streamlined look.",
-            "OnMe Tip\nTry the same outfit with another photo to compare the result.",
+            "TiHin Tip\nTry the same outfit with another photo to compare the result.",
             "Style Fact\nA tailored blazer instantly adds structure to any relaxed fit.",
             "Style Tip\nLinen works beautifully with simple accessories for an effortless look.",
             "Color Harmony\nNeutral tones pair effortlessly with deep forest accents."
@@ -845,7 +847,7 @@ fun ResultScreen(navController: NavController) {
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "OnMe AI",
+                        text = "TiHin AI",
                         color = Color.White,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
@@ -934,14 +936,14 @@ fun ResultScreen(navController: NavController) {
                             outfitImage = TryOnManager.selectedProductImage,
                             resultImage = TryOnManager.generatedResultImageUri,
                             createdAt = "Just now",
-                            isFavourite = OnMeStyleRepository.isFavourite(TryOnManager.selectedProductId),
+                            isFavourite = TiHinStyleRepository.isFavourite(TryOnManager.selectedProductId),
                             productId = TryOnManager.selectedProductId,
                             productName = TryOnManager.selectedProductName,
                             productBrand = TryOnManager.selectedProductBrand,
                             productPrice = TryOnManager.selectedProductPrice,
                             cardHeight = 240
                         )
-                        OnMeStyleRepository.saveResult(newResult)
+                        TiHinStyleRepository.saveResult(newResult)
                         /* Toast disabled for tests */
                     }
                 },
@@ -973,7 +975,7 @@ fun ResultScreen(navController: NavController) {
                 onClick = {
                     val shareIntent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, "Check out my new look on OnMe! Outfit: ${TryOnManager.selectedProductName} (${TryOnManager.selectedProductBrand})")
+                        putExtra(Intent.EXTRA_TEXT, "Check out my new look on TiHin! Outfit: ${TryOnManager.selectedProductName} (${TryOnManager.selectedProductBrand})")
                     }
                     context.startActivity(Intent.createChooser(shareIntent, "Share Look"))
                 },
@@ -992,7 +994,7 @@ fun ResultScreen(navController: NavController) {
                     if (SessionManager.isGuest) {
                         showAccountPrompt = true
                     } else {
-                        val isNowTracked = OnMeStyleRepository.togglePriceTracking(
+                        val isNowTracked = TiHinStyleRepository.togglePriceTracking(
                             productId = TryOnManager.selectedProductId,
                             productName = TryOnManager.selectedProductName,
                             merchant = TryOnManager.selectedProductBrand,

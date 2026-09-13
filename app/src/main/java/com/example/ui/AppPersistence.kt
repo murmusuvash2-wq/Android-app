@@ -22,7 +22,7 @@ object AppPersistence {
         UserPhotosRepository.init(appContext, UserProfileRepository.profile.userId)
 
         // 4. Style, Favourites, Price Tracking & Saved Results
-        OnMeStyleRepository.init(appContext, UserProfileRepository.profile.userId)
+        TiHinStyleRepository.init(appContext, UserProfileRepository.profile.userId)
 
         // 5. Shared Products History
         SharedProductRepositoryProvider.init(appContext, UserProfileRepository.profile.userId)
@@ -43,7 +43,7 @@ object AppPersistence {
         UserProfileRepository.init(appContext)
         SessionManager.init(appContext)
         UserPhotosRepository.initSync(appContext, UserProfileRepository.profile.userId)
-        OnMeStyleRepository.initSync(appContext, UserProfileRepository.profile.userId)
+        TiHinStyleRepository.initSync(appContext, UserProfileRepository.profile.userId)
         SharedProductRepositoryProvider.init(appContext, UserProfileRepository.profile.userId)
         if (!SessionManager.isGuest && TryOnManager.selectedUserPhotoUri.isBlank()) {
             UserPhotosRepository.defaultPhotoUri?.let { uri ->

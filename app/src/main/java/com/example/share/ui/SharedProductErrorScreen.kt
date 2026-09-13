@@ -43,16 +43,18 @@ fun SharedProductErrorScreen(navController: NavController) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(WarmIvory)
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .testTag("shared_product_error_screen"),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    Scaffold(
+        containerColor = WarmIvory,
+        contentWindowInsets = WindowInsets.statusBars
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .testTag("shared_product_error_screen"),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
         // Top App Bar
         Row(
             modifier = Modifier
@@ -204,4 +206,5 @@ fun SharedProductErrorScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(32.dp))
     }
+}
 }

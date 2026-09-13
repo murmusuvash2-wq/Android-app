@@ -3,6 +3,7 @@ package com.example.data.repository
 import com.example.data.datasource.MockProductDataSource
 import com.example.data.datasource.ProductDataSource
 import com.example.data.model.Product
+import com.example.data.model.HeroLook
 import com.example.ui.DiscoverTab
 import com.example.ui.getProductsForTab
 
@@ -37,5 +38,9 @@ class DefaultProductRepository(
 
     override fun getProductsForTab(tab: DiscoverTab): List<Product> {
         return getProductsForTab(getProducts(), tab)
+    }
+    
+    override fun getHeroLooks(): List<HeroLook> {
+        return dataSource.getHeroLooks()
     }
 }

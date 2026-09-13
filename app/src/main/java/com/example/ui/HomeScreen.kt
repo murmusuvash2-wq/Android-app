@@ -31,6 +31,9 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
+import com.example.R
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -40,26 +43,12 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.data.model.Product
+import com.example.data.model.HeroLook
 import com.example.data.repository.ProductRepository
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 import java.text.NumberFormat
 import java.util.Locale
-
-data class HeroLook(
-    val id: String,
-    val title: String,
-    val primaryImage: String,
-    val hangerImage: String? = null,
-    val wornImage: String? = null,
-    val brand: String,
-    val brandLogo: String? = null,
-    val price: Double
-) {
-    // Backward-compatibility properties with hangerImage fallback
-    val productImageUrl: String get() = hangerImage ?: primaryImage
-    val modelImageUrl: String get() = wornImage ?: primaryImage
-}
 
 typealias OutfitShowcaseData = HeroLook
 
@@ -90,41 +79,13 @@ fun HomeScreen(
     onNavigateToDiscover: () -> Unit = {}
 ) {
     val scrollState = rememberScrollState()
-    val showcaseDataList = remember {
-        listOf(
-            HeroLook(
-                id = "hero_0",
-                primaryImage = "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=600&q=80",
-                wornImage = "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=600&q=80",
-                title = "Forest Floral Dress",
-                brand = "ZARA",
-                price = 3499.0
-            ),
-            HeroLook(
-                id = "hero_1",
-                primaryImage = "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=600&q=80",
-                wornImage = "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=600&q=80",
-                title = "Blue Floral Smocked Dress",
-                brand = "H&M",
-                price = 2999.0
-            ),
-            HeroLook(
-                id = "hero_2",
-                primaryImage = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80",
-                wornImage = "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=600&q=80",
-                title = "Beige Linen Co-ord Set",
-                brand = "MANGO",
-                price = 4599.0
-            ),
-            HeroLook(
-                id = "hero_3",
-                primaryImage = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80",
-                wornImage = "https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&w=600&q=80",
-                title = "Navy Knit Polo & Trousers",
-                brand = "MASSIMO DUTTI",
-                price = 5999.0
-            )
-        )
+    val showcaseDataList = remember { 
+        ProductRepository.get().getHeroLooks().filter { look ->
+            val product = ProductRepository.get().getProductById(look.productId)
+            val hangerImg = look.hangerImage ?: product?.productImages?.getOrNull(1)
+            val wornImg = look.wornImage ?: product?.productImages?.getOrNull(0) ?: product?.primaryImageUrl
+            hangerImg != null && wornImg != null && hangerImg != wornImg
+        }
     }
 
     val pagerState = rememberPagerState(pageCount = { showcaseDataList.size })
@@ -141,6 +102,14 @@ fun HomeScreen(
         trendingProducts.map { TrendingLook.fromProduct(it) }
     }
 
+    // Most Loved reactive state
+    val mostLovedProducts = remember(TiHinStyleRepository.favouriteProductIds) {
+        val productRepo = ProductRepository.get()
+        TiHinStyleRepository.favouriteProductIds.mapNotNull { id ->
+            productRepo.getProductById(id)?.let { TrendingLook.fromProduct(it) }
+        }
+    }
+
     val context = LocalContext.current
     var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
 
@@ -148,7 +117,7 @@ fun HomeScreen(
         contract = ActivityResultContracts.TakePicture(),
         onResult = { success ->
             if (success && tempCameraUri != null) {
-                TryOnManager.updateUserPhoto(tempCameraUri.toString())
+                TryOnManager.updateUserPhoto(tempCameraUri.toString(), context)
                 /* Toast disabled for tests */
             }
             tempCameraUri = null
@@ -159,7 +128,7 @@ fun HomeScreen(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
             if (uri != null) {
-                TryOnManager.updateUserPhoto(uri.toString())
+                TryOnManager.updateUserPhoto(uri.toString(), context)
                 /* Toast disabled for tests */
             }
         }
@@ -183,7 +152,7 @@ fun HomeScreen(
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "OnMe",
+                        text = "TiHin",
                         fontWeight = FontWeight.Bold,
                         fontSize = 30.sp,
                         color = Charcoal,
@@ -199,7 +168,7 @@ fun HomeScreen(
                     )
                 }
                 Text(
-                    text = "See it on you.",
+                    text = stringResource(R.string.tagline),
                     fontSize = 12.sp,
                     color = SoftCharcoal,
                     fontWeight = FontWeight.Medium,
@@ -288,150 +257,160 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth()
             ) { page ->
                 val currentShowcase = showcaseDataList[page]
-                Column {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(240.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            // Left Image: Product outfit
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(currentShowcase.productImageUrl)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = "Outfit product view",
-                                contentScale = ContentScale.Crop,
-                                alignment = Alignment.TopCenter,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight()
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(OffWhite)
-                                    .border(1.dp, WarmGray, RoundedCornerShape(16.dp))
-                            )
-                            // Right Image: Model fitted with outfit
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(currentShowcase.modelImageUrl)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = "Fitted view",
-                                contentScale = ContentScale.Crop,
-                                alignment = Alignment.TopCenter,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight()
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(OffWhite)
-                                    .border(1.dp, WarmGray, RoundedCornerShape(16.dp))
-                            )
-                        }
+                val product = remember(currentShowcase.productId) { ProductRepository.get().getProductById(currentShowcase.productId) }
 
-                        // Center arrow badge
+                if (product != null) {
+                    Column {
+                        val hangerImg = currentShowcase.hangerImage ?: product.productImages.getOrNull(1)
+                        val wornImg = currentShowcase.wornImage ?: product.productImages.getOrNull(0) ?: product.primaryImageUrl
+                        
                         Box(
                             modifier = Modifier
-                                .align(Alignment.Center)
-                                .size(44.dp)
-                                .shadow(8.dp, CircleShape, spotColor = Color.Black.copy(alpha = 0.15f))
-                                .background(Color.White, CircleShape),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .height(240.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowForward,
-                                contentDescription = "Try-on arrow",
-                                tint = DeepForest,
-                                modifier = Modifier.size(20.dp)
-                            )
+                            if (hangerImg != null && wornImg != null && hangerImg != wornImg) {
+                                Row(
+                                    modifier = Modifier.fillMaxSize(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    // Left Image: Product outfit
+                                    AsyncImage(
+                                        model = ImageRequest.Builder(LocalContext.current)
+                                            .data(hangerImg)
+                                            .crossfade(true)
+                                            .build(),
+                                        contentDescription = "Outfit product view",
+                                        contentScale = ContentScale.Crop,
+                                        alignment = Alignment.TopCenter,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight()
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .background(OffWhite)
+                                            .border(1.dp, WarmGray, RoundedCornerShape(16.dp))
+                                    )
+                                    // Right Image: Model fitted with outfit
+                                    AsyncImage(
+                                        model = ImageRequest.Builder(LocalContext.current)
+                                            .data(wornImg)
+                                            .crossfade(true)
+                                            .build(),
+                                        contentDescription = "Fitted view",
+                                        contentScale = ContentScale.Crop,
+                                        alignment = Alignment.TopCenter,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight()
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .background(OffWhite)
+                                            .border(1.dp, WarmGray, RoundedCornerShape(16.dp))
+                                    )
+                                }
+
+                                // Center arrow badge
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.Center)
+                                        .size(44.dp)
+                                        .shadow(8.dp, CircleShape, spotColor = Color.Black.copy(alpha = 0.15f))
+                                        .background(Color.White, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowForward,
+                                        contentDescription = "Try-on arrow",
+                                        tint = DeepForest,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                         }
-                    }
+                        }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
-                    // Info and CTA row (compact, showing title, price, and CTA)
-                    val heroPriceFormatted = remember(currentShowcase.price) {
-                        NumberFormat.getCurrencyInstance(Locale("en", "IN")).apply {
-                            maximumFractionDigits = 0
-                        }.format(currentShowcase.price)
-                    }
+                        // Info and CTA row (compact, showing title, price, and CTA)
+                        val heroPriceFormatted = remember(product.price) {
+                            NumberFormat.getCurrencyInstance(Locale("en", "IN")).apply {
+                                maximumFractionDigits = 0
+                            }.format(product.price)
+                        }
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 52.dp)
-                            .wrapContentHeight(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
                         Row(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 52.dp)
+                                .wrapContentHeight(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(currentShowcase.productImageUrl)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(OffWhite)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = currentShowcase.title,
-                                    fontSize = 14.sp,
-                                    fontFamily = Inter,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Charcoal,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                val primaryImg = hangerImg ?: wornImg ?: product.primaryImageUrl
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(primaryImg)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(42.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(OffWhite)
                                 )
-                                Text(
-                                    text = heroPriceFormatted,
-                                    fontSize = 13.sp,
-                                    fontFamily = Inter,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = SoftCharcoal
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = product.name,
+                                        fontSize = 14.sp,
+                                        fontFamily = Inter,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Charcoal,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = heroPriceFormatted,
+                                        fontSize = 13.sp,
+                                        fontFamily = Inter,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = SoftCharcoal
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(10.dp))
+
+                            Button(
+                                onClick = {
+                                    TryOnManager.selectedProductId = product.id
+                                    TryOnManager.selectedProductName = product.name
+                                    TryOnManager.selectedProductBrand = product.brand
+                                    TryOnManager.selectedProductPrice = product.price
+                                    TryOnManager.selectedProductImage = product.primaryImageUrl
+                                    TryOnManager.generatedResultImageUri = wornImg ?: product.primaryImageUrl
+                                    navController.navigate(Screen.TryOn.route)
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Charcoal, contentColor = Color.White),
+                                shape = RoundedCornerShape(20.dp),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                modifier = Modifier.height(38.dp)
+                            ) {
+                                Text("Try this look", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    imageVector = Icons.Default.ArrowForward,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp)
                                 )
                             }
                         }
-
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        Button(
-                            onClick = {
-                                TryOnManager.selectedProductId = currentShowcase.id
-                                TryOnManager.selectedProductName = currentShowcase.title
-                                TryOnManager.selectedProductBrand = currentShowcase.brand
-                                TryOnManager.selectedProductPrice = currentShowcase.price
-                                TryOnManager.selectedProductImage = currentShowcase.primaryImage
-                                TryOnManager.generatedResultImageUri = currentShowcase.wornImage ?: currentShowcase.primaryImage
-                                navController.navigate(Screen.TryOn.route)
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Charcoal, contentColor = Color.White),
-                            shape = RoundedCornerShape(20.dp),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                            modifier = Modifier.height(38.dp)
-                        ) {
-                            Text("Try this look", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                imageVector = Icons.Default.ArrowForward,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
                     }
-                }
             }
+                }
 
             // Carousel Dots
             Row(
@@ -469,8 +448,6 @@ fun HomeScreen(
                     if (uri != null) {
                         tempCameraUri = uri
                         cameraLauncher.launch(uri)
-                    } else {
-                        /* Toast disabled for tests */
                     }
                 },
                 shape = RoundedCornerShape(16.dp),
@@ -592,9 +569,9 @@ fun HomeScreen(
                 items(trendingLooks, key = { it.id }) { item ->
                     TrendingLookCard(
                         data = item,
-                        isFavourite = OnMeStyleRepository.isFavourite(item.id),
+                        isFavourite = TiHinStyleRepository.isFavourite(item.id),
                         onToggleFavourite = {
-                            OnMeStyleRepository.toggleFavourite(
+                            TiHinStyleRepository.toggleFavourite(
                                 productId = item.id,
                                 productName = item.title,
                                 merchant = item.brand,
@@ -614,6 +591,81 @@ fun HomeScreen(
                 }
             }
         }
+        
+        // 5. MOST LOVED SECTION
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Most Loved",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Charcoal
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (mostLovedProducts.isEmpty()) {
+                // Empty state for Most Loved
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, WarmGray),
+                    modifier = Modifier.fillMaxWidth().height(100.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Nothing loved yet",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Charcoal
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Tap the heart on a style you love.",
+                            fontSize = 12.sp,
+                            color = SoftCharcoal
+                        )
+                    }
+                }
+            } else {
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(mostLovedProducts, key = { it.id }) { item ->
+                        TrendingLookCard(
+                            data = item,
+                            isFavourite = true,
+                            onToggleFavourite = {
+                                TiHinStyleRepository.toggleFavourite(
+                                    productId = item.id,
+                                    productName = item.title,
+                                    merchant = item.brand,
+                                    price = item.price,
+                                    imageUrl = item.imageUrl
+                                )
+                            },
+                            onTryOn = {
+                                TryOnManager.selectedProductId = item.id
+                                TryOnManager.selectedProductName = item.title
+                                TryOnManager.selectedProductBrand = item.brand
+                                TryOnManager.selectedProductPrice = item.price
+                                TryOnManager.selectedProductImage = item.imageUrl
+                                navController.navigate(Screen.TryOn.route)
+                            }
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -630,13 +682,18 @@ private fun TrendingLookCard(
         }
     }
     val formattedPrice = formatter.format(data.price)
+    
+    // Responsive sizing: Target ~1.7 cards on normal phones
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val cardWidth = (screenWidth * 0.55f).coerceAtMost(220.dp)
 
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceColor),
         border = BorderStroke(1.dp, BorderColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        modifier = Modifier.width(156.dp)
+        modifier = Modifier.width(cardWidth)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             // [ PRODUCT IMAGE ]

@@ -5,7 +5,7 @@ import com.example.data.repository.ProductRepositoryProvider
 import com.example.share.data.SharedProductRepositoryProvider
 import com.example.share.resolver.ProductResolverProvider
 import com.example.share.ui.ShareFlowManager
-import com.example.credit.repository.FakeCreditRepository
+
 import com.example.credit.repository.CreditRepositoryProvider
 import com.example.ui.SessionManager
 import com.example.ui.TryOnManager
@@ -27,7 +27,7 @@ class ShareFlowRobolectricTest {
 
     @Before
     fun setUp() {
-        CreditRepositoryProvider.setForTesting(FakeCreditRepository())
+        
         ProductRepositoryProvider.reset()
         ProductResolverProvider.reset()
         SharedProductRepositoryProvider.reset()

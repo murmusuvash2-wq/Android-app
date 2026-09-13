@@ -1,4 +1,6 @@
-# OnMe (Provisional)
+# TiHin
+
+**Try. Love. Buy.**
 
 > AI virtual outfit try-on Android application enabling users to visualize clothing items on themselves before purchasing.
 

@@ -1,6 +1,7 @@
 package com.example.data.datasource
 
 import com.example.data.model.Product
+import com.example.data.model.HeroLook
 
 /**
  * Data source abstraction for accessing catalog product data.
@@ -21,4 +22,5 @@ interface ProductDataSource {
      * Returns curated trending products for Home and featured showcase displays.
      */
     fun getTrendingProducts(): List<Product>
+    fun getHeroLooks(): List<HeroLook>
 }

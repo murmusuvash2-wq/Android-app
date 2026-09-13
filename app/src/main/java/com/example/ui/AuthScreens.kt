@@ -2,6 +2,7 @@ package com.example.ui
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,23 +13,32 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.NorthEast
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.example.R
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -62,7 +72,7 @@ fun SplashScreen(navController: NavController) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "OnMe",
+                text = "TiHin",
                 fontWeight = FontWeight.Bold,
                 fontSize = 46.sp,
                 color = Charcoal,
@@ -79,7 +89,7 @@ fun SplashScreen(navController: NavController) {
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "AI Virtual Outfit Try-On",
+            text = stringResource(R.string.tagline),
             fontSize = 15.sp,
             fontWeight = FontWeight.Medium,
             color = SoftCharcoal
@@ -98,7 +108,8 @@ fun SplashScreen(navController: NavController) {
 data class OnboardingPageData(
     val title: String,
     val subtitle: String,
-    val imageUrl: String
+    val tag: String,
+    @DrawableRes val drawableRes: Int
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -107,24 +118,22 @@ fun OnboardingScreen(navController: NavController) {
     val pages = remember {
         listOf(
             OnboardingPageData(
-                title = "See it on you",
-                subtitle = "Try on any outfit virtually with AI precision before you buy.",
-                imageUrl = "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1000&q=80"
+                title = "Try.",
+                subtitle = "See it on you before you buy.",
+                tag = "try",
+                drawableRes = R.drawable.tihin_onboarding_try
             ),
             OnboardingPageData(
-                title = "Discover your next look",
-                subtitle = "Browse trending aesthetics, runway looks, and top brand drops.",
-                imageUrl = "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=1000&q=80"
+                title = "Love.",
+                subtitle = "Find your perfect look with confidence.",
+                tag = "love",
+                drawableRes = R.drawable.tihin_onboarding_love
             ),
             OnboardingPageData(
-                title = "Try, Save, Shop",
-                subtitle = "Keep your favorite fitted looks and build your personal digital wardrobe.",
-                imageUrl = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1000&q=80"
-            ),
-            OnboardingPageData(
-                title = "Shop where you love",
-                subtitle = "Get direct links to top merchants and track real-time price drops.",
-                imageUrl = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=1000&q=80"
+                title = "Buy.",
+                subtitle = "Shop your favourite styles in just a tap.",
+                tag = "buy",
+                drawableRes = R.drawable.tihin_onboarding_buy
             )
         )
     }
@@ -134,81 +143,42 @@ fun OnboardingScreen(navController: NavController) {
     var showBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    Box(modifier = Modifier.fillMaxSize().background(WarmIvory)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(WarmIvory)
+    ) {
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag("onboarding_pager")
         ) { page ->
             val item = pages[page]
-            Box(modifier = Modifier.fillMaxSize()) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(item.imageUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = item.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                // Dark gradient overlay for readability
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Black.copy(alpha = 0.25f),
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.85f)
-                                ),
-                                startY = 0f,
-                                endY = Float.POSITIVE_INFINITY
-                            )
-                        )
-                )
-
-                // Bottom Content
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(horizontal = 28.dp)
-                        .padding(bottom = 120.dp)
-                ) {
-                    Text(
-                        text = item.title,
-                        style = Typography.displaySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = item.subtitle,
-                        style = Typography.bodyLarge,
-                        color = Color.White.copy(alpha = 0.85f),
-                        lineHeight = 22.sp
-                    )
-                }
-            }
+            OnboardingNativePage(
+                item = item,
+                modifier = Modifier.fillMaxSize()
+            )
         }
 
         // Top Skip Button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 44.dp, end = 20.dp),
+                .statusBarsPadding()
+                .padding(top = 16.dp, end = 20.dp),
             horizontalArrangement = Arrangement.End
         ) {
             Surface(
-                onClick = {
-                    showBottomSheet = true
-                },
+                onClick = { showBottomSheet = true },
                 shape = RoundedCornerShape(20.dp),
-                color = Color.Black.copy(alpha = 0.35f)
+                color = SurfaceColor.copy(alpha = 0.88f),
+                border = BorderStroke(1.dp, BorderColor.copy(alpha = 0.7f)),
+                modifier = Modifier.testTag("onboarding_skip_button")
             ) {
                 Text(
                     text = "Skip",
-                    color = Color.White,
+                    color = Charcoal,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -221,12 +191,16 @@ fun OnboardingScreen(navController: NavController) {
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(horizontal = 28.dp, vertical = 40.dp),
+                .navigationBarsPadding()
+                .padding(horizontal = 24.dp, vertical = 28.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Dots
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            // Indicator Dots
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 repeat(pages.size) { index ->
                     val isSelected = pagerState.currentPage == index
                     Box(
@@ -234,7 +208,7 @@ fun OnboardingScreen(navController: NavController) {
                             .height(6.dp)
                             .width(if (isSelected) 24.dp else 6.dp)
                             .clip(CircleShape)
-                            .background(if (isSelected) Color.White else Color.White.copy(alpha = 0.4f))
+                            .background(if (isSelected) Charcoal else BorderColor)
                     )
                 }
             }
@@ -251,7 +225,11 @@ fun OnboardingScreen(navController: NavController) {
                     }
                 },
                 shape = RoundedCornerShape(24.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Charcoal, contentColor = Color.White)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Charcoal,
+                    contentColor = Color.White
+                ),
+                modifier = Modifier.testTag("onboarding_next_button")
             ) {
                 Text(
                     text = if (pagerState.currentPage == pages.size - 1) "Get Started" else "Next",
@@ -298,6 +276,138 @@ fun OnboardingScreen(navController: NavController) {
     }
 }
 
+@Composable
+internal fun OnboardingNativePage(
+    item: OnboardingPageData,
+    modifier: Modifier = Modifier
+) {
+    if (item.drawableRes != 0) {
+        // Supplied custom artwork presentation:
+        // Complete editorial composition (heading, subtitle, main visual, TiHin branding).
+        // Occupies the central onboarding area with responsive width-driven sizing and comfortable control clearance.
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(WarmIvory)
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(
+                    top = 58.dp,
+                    bottom = 86.dp,
+                    start = 16.dp,
+                    end = 16.dp
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = item.drawableRes),
+                contentDescription = "${item.title} ${item.subtitle}",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .widthIn(max = 480.dp)
+                    .testTag("onboarding_custom_image_${item.tag}")
+            )
+        }
+    } else {
+        // Fallback UI ONLY when custom artwork is genuinely unavailable (drawableRes == 0)
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .background(WarmIvory)
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(top = 58.dp, bottom = 92.dp, start = 24.dp, end = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Header Section
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = item.title,
+                        fontSize = 38.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Charcoal,
+                        modifier = Modifier.testTag("onboarding_fallback_title_${item.tag}")
+                    )
+                    if (item.tag == "love") {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            imageVector = Icons.Default.Favorite,
+                            contentDescription = null,
+                            tint = Color(0xFFD48B7B),
+                            modifier = Modifier.size(28.dp)
+                        )
+                    } else if (item.tag == "buy") {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            imageVector = Icons.Default.ShoppingBag,
+                            contentDescription = null,
+                            tint = DeepForest,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = item.subtitle,
+                    style = Typography.bodyLarge,
+                    color = SoftCharcoal,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 22.sp,
+                    modifier = Modifier.testTag("onboarding_fallback_subtitle_${item.tag}")
+                )
+            }
+
+            // Fallback Graphic Card
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = SurfaceColor,
+                border = BorderStroke(1.dp, BorderColor),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 260.dp, max = 340.dp)
+                    .padding(vertical = 16.dp)
+                    .testTag("onboarding_fallback_card_${item.tag}")
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = when (item.tag) {
+                                "love" -> Icons.Default.Favorite
+                                "buy" -> Icons.Default.ShoppingBag
+                                else -> Icons.Default.Check
+                            },
+                            contentDescription = null,
+                            tint = Charcoal.copy(alpha = 0.6f),
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = item.title,
+                            style = Typography.titleMedium,
+                            color = Charcoal
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 enum class AuthState { MAIN, SIGN_UP, FORGOT_PASSWORD }
 
 @Composable
@@ -324,7 +434,7 @@ fun AuthBottomSheetContent(
                 AuthState.MAIN -> {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            text = "Welcome to OnMe",
+                            text = "Welcome to TiHin",
                             style = Typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             color = Charcoal

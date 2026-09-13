@@ -22,7 +22,7 @@ import kotlinx.coroutines.withContext
  * 2. Price tracked products and product-specific target prices.
  * 3. Saved try-on generated results (appearing at the top of Looks -> Recent).
  */
-object OnMeStyleRepository {
+object TiHinStyleRepository {
 
     private var appContext: Context? = null
     private val ioScope = CoroutineScope(Dispatchers.IO)

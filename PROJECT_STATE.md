@@ -1,4 +1,6 @@
-# Project State: OnMe (Provisional)
+# Project State: TiHin
+
+**Try. Love. Buy.**
 
 **Current Phase:** Frontend Prototype & UI Polish  
 **Platform:** Android (Jetpack Compose, Material 3)  
@@ -8,7 +10,7 @@
 
 ## 1. Project Purpose
 
-OnMe is an AI-powered virtual outfit try-on Android application designed to let users visualize how clothing items look on them before buying. The app allows users to explore fashion items from various merchants, select or take a photo, simulate an AI try-on fitting, save and track looks, and find direct purchasing links.
+TiHin is an AI-powered virtual outfit try-on Android application designed to let users visualize how clothing items look on them before buying. The app allows users to explore fashion items from various merchants, select or take a photo, simulate an AI try-on fitting, save and track looks, and find direct purchasing links.
 
 ---
 
@@ -133,7 +135,7 @@ Splash
 - **Features:**
   - Header: "Your New Look" with back navigation.
   - **Hero Area:** Large, standalone AI-generated result image (original photo kept in memory, not toggled by default).
-  - Watermark badge ("OnMe AI") in corner.
+  - Watermark badge ("TiHin AI") in corner.
   - Product metadata: Brand, product title, formatted price.
   - Rating/Reviews row: Schema-supported (`rating`, `reviewCount`, `ratingSource`), hidden cleanly when data is null.
   - Compact Actions Row:
@@ -193,7 +195,7 @@ Milestone 4 addressed end-to-end stability, state consistency, user trust, and v
   - Enforced Back button hierarchy: Child handlers (sheets/dialogs) intercept first; secondary tabs (Discover, Looks, Me) navigate back to Home; Home navigates to device exit.
   - Bottom navigation tab state persisted via `rememberSaveable`.
 - **Batch 4 — State Integrity:**
-  - Introduced unified in-memory `OnMeStyleRepository` for synchronized state management across Home, Discover, Looks, and Result.
+  - Introduced unified in-memory `TiHinStyleRepository` for synchronized state management across Home, Discover, Looks, and Result.
   - Favouriting an item automatically activates Price Tracking; disabling price tracking does not unfavourite.
   - Saved looks and price tracking actions are strictly idempotent with persistent UI confirmation.
 - **Batch 5 — Discover Tab Filtering:**

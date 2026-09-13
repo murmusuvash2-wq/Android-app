@@ -1,6 +1,6 @@
 package com.example
 
-import com.example.credit.repository.FakeCreditRepository
+
 
 import android.content.Context
 import androidx.compose.ui.test.*
@@ -36,7 +36,7 @@ class EditProfileTest {
 
     @Before
     fun setUp() {
-        CreditRepositoryProvider.setForTesting(FakeCreditRepository())
+        
         SessionManager.isGuest = false
         UserProfileRepository.resetForTesting(
             customProfile = UserProfile(

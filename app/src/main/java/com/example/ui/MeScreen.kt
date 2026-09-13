@@ -455,7 +455,7 @@ fun MeScreen(
                 )
                 HorizontalDivider(color = WarmGray, modifier = Modifier.padding(horizontal = 16.dp))
                 SimpleRow(
-                    title = "About OnMe",
+                    title = "About TiHin",
                     onClick = {
                         /* Toast disabled for tests */
                     }

@@ -1,6 +1,6 @@
 package com.example
 
-import com.example.credit.repository.FakeCreditRepository
+
 
 import android.content.Intent
 import com.example.data.model.Product
@@ -32,7 +32,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [36])
 class ShareFoundationUnitTest {
 
     private lateinit var resolver: ProductResolver
@@ -41,7 +41,7 @@ class ShareFoundationUnitTest {
 
     @Before
     fun setUp() {
-        CreditRepositoryProvider.setForTesting(FakeCreditRepository())
+        
         ProductRepositoryProvider.reset()
         ProductResolverProvider.reset()
         SharedProductRepositoryProvider.reset()

@@ -1,0 +1,57 @@
+name: Firebase App Distribution
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_distribute:
+    name: Build and Distribute
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.9'
+
+      - name: Run Tests
+        run: gradle testDebugUnitTest
+
+      - name: Build Debug APK
+        run: gradle assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Extract Release Notes
+        id: release_notes
+        run: |
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "Branch: ${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "Commit: ${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "Test Result: PASS" >> $GITHUB_OUTPUT
+          echo "Build ID: ${{ github.run_id }}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Upload to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_CREDENTIALS }}
+          groups: ${{ secrets.FIREBASE_TESTER_GROUP }}
+          file: app/build/outputs/apk/debug/app-debug.apk
+          releaseNotes: ${{ steps.release_notes.outputs.notes }}

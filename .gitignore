@@ -18,3 +18,8 @@ local.properties
 debug.keystore
 debug.keystore.base64
 test_results.txt
+
+# Development tooling & logs
+*.log
+tools/logs/*
+!tools/logs/.gitkeep

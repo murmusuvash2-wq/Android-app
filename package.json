@@ -1,0 +1,8 @@
+{
+  "name": "tihin-admin-panel",
+  "version": "1.0.0",
+  "description": "TiHin Catalog Admin Panel for CSV ingest, draft review, and publishing",
+  "scripts": {
+    "build": "node -e \"const fs=require('fs'); const url=process.env.SUPABASE_URL||''; const key=process.env.SUPABASE_ANON_KEY||''; fs.writeFileSync('admin-panel/config.js', 'window.__ENV__ = { SUPABASE_URL: ' + JSON.stringify(url) + ', SUPABASE_ANON_KEY: ' + JSON.stringify(key) + ' };'); console.log('Generated admin-panel/config.js');\""
+  }
+}

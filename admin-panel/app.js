@@ -207,23 +207,53 @@ logoutBtn.addEventListener('click', async () => {
 });
 
 // -------------------------------------------------------------
-// CSV Drag & Drop and File Selection
+// CSV Drag & Drop, File Selection & Validation Helper
 // -------------------------------------------------------------
+function isCsvFile(file) {
+    if (!file) return false;
+    const name = (file.name || '').toLowerCase();
+    if (name.endsWith('.csv')) return true;
+    const validMimes = [
+        'text/csv',
+        'application/csv',
+        'text/comma-separated-values',
+        'application/vnd.ms-excel',
+        'text/plain'
+    ];
+    return validMimes.includes(file.type);
+}
+
+function handleFileSelected(file) {
+    if (!file) {
+        fileNameDisplay.textContent = "No file chosen";
+        fileNameDisplay.classList.add('text-slate');
+        fileNameDisplay.classList.remove('text-forest', 'text-red-600', 'font-semibold');
+        return;
+    }
+
+    if (!isCsvFile(file)) {
+        fileNameDisplay.textContent = `⚠ "${file.name}" may not be a CSV. Please select a .csv file.`;
+        fileNameDisplay.classList.remove('text-slate', 'text-forest');
+        fileNameDisplay.classList.add('text-red-600', 'font-semibold');
+        return;
+    }
+
+    fileNameDisplay.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+    fileNameDisplay.classList.remove('text-slate', 'text-red-600');
+    fileNameDisplay.classList.add('text-forest', 'font-semibold');
+}
+
 if (dropZone && csvInput) {
-    dropZone.addEventListener('click', () => {
+    dropZone.addEventListener('click', (e) => {
+        // Prevent recursive trigger if user clicked directly on a label or input
+        if (e.target === csvInput || e.target.closest('label[for="csv-input"]')) {
+            return;
+        }
         csvInput.click();
     });
 
     csvInput.addEventListener('change', () => {
-        if (csvInput.files && csvInput.files[0]) {
-            fileNameDisplay.textContent = `Selected: ${csvInput.files[0].name} (${(csvInput.files[0].size / 1024).toFixed(1)} KB)`;
-            fileNameDisplay.classList.remove('text-slate');
-            fileNameDisplay.classList.add('text-forest', 'font-semibold');
-        } else {
-            fileNameDisplay.textContent = "No file chosen";
-            fileNameDisplay.classList.add('text-slate');
-            fileNameDisplay.classList.remove('text-forest', 'font-semibold');
-        }
+        handleFileSelected(csvInput.files && csvInput.files[0]);
     });
 
     dropZone.addEventListener('dragover', (e) => {
@@ -240,78 +270,264 @@ if (dropZone && csvInput) {
         dropZone.classList.remove('border-forest', 'bg-forest/5');
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
             csvInput.files = e.dataTransfer.files;
-            fileNameDisplay.textContent = `Selected: ${e.dataTransfer.files[0].name} (${(e.dataTransfer.files[0].size / 1024).toFixed(1)} KB)`;
-            fileNameDisplay.classList.remove('text-slate');
-            fileNameDisplay.classList.add('text-forest', 'font-semibold');
+            handleFileSelected(csvInput.files[0]);
         }
     });
 }
 
 // -------------------------------------------------------------
-// CSV Flow (14-Column Support, Exact Preserved Ingestion Logic)
+// RFC 4180 Compliant CSV Parser
+// Supports quotes, commas inside quotes, escaped quotes (""),
+// \r\n and \n line endings, and preserves empty fields without column shifting.
+// -------------------------------------------------------------
+function parseCSV(text) {
+    const rows = [];
+    let currentRow = [];
+    let currentField = "";
+    let inQuotes = false;
+    let i = 0;
+    const len = text.length;
+
+    while (i < len) {
+        const char = text[i];
+
+        if (inQuotes) {
+            if (char === '"') {
+                if (i + 1 < len && text[i + 1] === '"') {
+                    currentField += '"';
+                    i += 2;
+                } else {
+                    inQuotes = false;
+                    i++;
+                }
+            } else {
+                currentField += char;
+                i++;
+            }
+        } else {
+            if (char === '"') {
+                inQuotes = true;
+                i++;
+            } else if (char === ',') {
+                currentRow.push(currentField);
+                currentField = "";
+                i++;
+            } else if (char === '\r') {
+                if (i + 1 < len && text[i + 1] === '\n') {
+                    i++;
+                }
+                currentRow.push(currentField);
+                currentField = "";
+                rows.push(currentRow);
+                currentRow = [];
+                i++;
+            } else if (char === '\n') {
+                currentRow.push(currentField);
+                currentField = "";
+                rows.push(currentRow);
+                currentRow = [];
+                i++;
+            } else {
+                currentField += char;
+                i++;
+            }
+        }
+    }
+
+    if (currentField.length > 0 || currentRow.length > 0) {
+        currentRow.push(currentField);
+        rows.push(currentRow);
+    }
+
+    // Filter out completely blank trailing lines
+    return rows.filter(r => r.length > 1 || (r.length === 1 && r[0].trim() !== ""));
+}
+
+// -------------------------------------------------------------
+// CSV Flow (Production-Safe Ingestion with RFC 4180 & Deduping)
 // -------------------------------------------------------------
 csvForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const file = csvInput.files[0];
     if (!file) return;
 
-    setCsvLoading(true);
+    if (!isCsvFile(file)) {
+        csvMessage.textContent = `Selected file "${file.name}" is not a recognized CSV. Please choose a .csv file.`;
+        csvMessage.className = 'text-xs font-semibold py-2.5 px-3.5 rounded-xl bg-red-50 text-red-700 border border-red-200';
+        csvMessage.classList.remove('hidden');
+        return;
+    }
+
+    setCsvLoading(true, "Reading CSV file...");
     csvMessage.classList.add('hidden');
     reviewSection.classList.add('hidden');
 
     try {
         const text = await file.text();
-        const rows = text.split('\n').map(row => row.trim()).filter(Boolean);
-        if (rows.length < 2) throw new Error("CSV is empty or missing headers.");
+        const parsedRows = parseCSV(text);
+        if (parsedRows.length < 2) throw new Error("CSV is empty or missing header row.");
 
-        // Skip header row
-        const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
-        
-        const drafts = [];
-        for (let i = 1; i < rows.length; i++) {
-            const cols = rows[i].split(',');
-            if (cols.length < headers.length) continue;
+        // Clean headers
+        const headers = parsedRows[0].map(h => h.trim().toLowerCase());
+
+        // Validate presence of minimum required draft fields
+        const requiredHeaders = ['site', 'product_id', 'name', 'image_url', 'product_url'];
+        const missingHeaders = requiredHeaders.filter(rh => !headers.includes(rh));
+        if (missingHeaders.length > 0) {
+            throw new Error(`CSV is missing required columns: ${missingHeaders.join(', ')}`);
+        }
+
+        // Fetch existing drafts to check site + product_id duplicates in DB
+        setCsvLoading(true, "Checking existing database drafts...");
+        const { data: existingDrafts, error: fetchErr } = await supabaseClient
+            .from('product_drafts')
+            .select('extracted_data')
+            .eq('status', 'draft');
+
+        if (fetchErr) {
+            console.warn("Could not query existing drafts for deduping:", fetchErr);
+        }
+
+        const seenKeys = new Set();
+        if (existingDrafts) {
+            for (const d of existingDrafts) {
+                const ed = d.extracted_data || {};
+                const site = (ed.site || '').trim().toLowerCase();
+                const pid = String(ed.external_product_id || ed.product_id || '').trim();
+                if (site && pid) {
+                    seenKeys.add(`${site}:${pid}`);
+                }
+            }
+        }
+
+        const draftsToInsert = [];
+        let duplicateCount = 0;
+        let failedCount = 0;
+        const failedSamples = [];
+
+        for (let i = 1; i < parsedRows.length; i++) {
+            const cols = parsedRows[i];
+            const rowNum = i + 1;
+
+            if (cols.length !== headers.length) {
+                failedCount++;
+                if (failedSamples.length < 3) {
+                    failedSamples.push(`Row ${rowNum}: column count mismatch (${cols.length} cols vs ${headers.length} expected)`);
+                }
+                continue;
+            }
 
             const data = {};
             headers.forEach((h, idx) => {
-                data[h] = cols[idx] ? cols[idx].trim() : null;
+                const val = cols[idx] !== undefined ? cols[idx].trim() : '';
+                data[h] = val !== '' ? val : null;
             });
 
+            // Required field check for draft import
+            const site = data.site || null;
+            const productId = data.product_id || data.external_product_id || null;
+            const name = data.name || null;
+            const imageUrl = data.image_url || null;
+            const productUrl = data.product_url || data.merchant_url || null;
+
+            if (!site || !productId || !name || !imageUrl || !productUrl) {
+                failedCount++;
+                if (failedSamples.length < 3) {
+                    failedSamples.push(`Row ${rowNum}: missing required draft fields (site, product_id, name, image_url, or product_url)`);
+                }
+                continue;
+            }
+
+            // Duplicate detection using site + product_id
+            const dedupKey = `${site.toLowerCase()}:${String(productId)}`;
+            if (seenKeys.has(dedupKey)) {
+                duplicateCount++;
+                continue;
+            }
+            seenKeys.add(dedupKey);
+
+            // Parse optional fields while preserving values
+            const price = data.price != null && !isNaN(parseFloat(data.price)) ? parseFloat(data.price) : null;
+            const mrpRaw = data.mrp || data.MRP || data.original_price;
+            const originalPrice = mrpRaw != null && !isNaN(parseFloat(mrpRaw)) ? parseFloat(mrpRaw) : null;
+            
+            const discRaw = data['discount%'] || data.discount_percent;
+            const discountPercent = discRaw != null && !isNaN(parseFloat(discRaw)) ? parseFloat(discRaw) : null;
+
+            const rating = data.rating != null && !isNaN(parseFloat(data.rating)) ? parseFloat(data.rating) : null;
+            const ratingCountRaw = data.rating_count || data.review_count;
+            const reviewCount = ratingCountRaw != null && !isNaN(parseInt(ratingCountRaw, 10)) ? parseInt(ratingCountRaw, 10) : null;
+
+            const sizes = data.sizes ? data.sizes.split('|').map(s => s.trim()).filter(Boolean) : [];
+            const colors = data.colors ? data.colors.split('|').map(c => c.trim()).filter(Boolean) : (data.color ? data.color.split('|').map(c => c.trim()).filter(Boolean) : []);
+            const productImages = data.product_images ? data.product_images.split('|').map(u => u.trim()).filter(Boolean) : (imageUrl ? [imageUrl] : []);
+
             const extracted = {
-                brand: data.brand || null,
-                name: data.name || null,
-                price: parseFloat(data.price) || null,
-                original_price: data.original_price ? parseFloat(data.original_price) : (data.MRP ? parseFloat(data.MRP) : (data.mrp ? parseFloat(data.mrp) : null)),
-                description: data.description || null,
-                material: data.material || null,
-                sizes: data.sizes ? data.sizes.split('|').map(s => s.trim()) : [],
-                colors: data.colors ? data.colors.split('|').map(c => c.trim()) : (data.color ? data.color.split('|').map(c => c.trim()) : []),
-                product_images: data.product_images ? data.product_images.split('|').map(i => i.trim()) : (data.image_url ? data.image_url.split('|').map(i => i.trim()) : []),
-                product_url: data.product_url || data.merchant_url || null,
-                site: data.site || null,
-                external_product_id: data.product_id || data.external_product_id || null,
+                site: site,
+                external_product_id: productId,
+                product_id: productId,
                 gender: data.gender || null,
                 category: data.category || null,
-                discount_percent: data['discount%'] ? parseFloat(data['discount%']) : (data.discount_percent ? parseFloat(data.discount_percent) : null),
-                rating: data.rating ? parseFloat(data.rating) : null,
-                review_count: data.rating_count ? parseInt(data.rating_count, 10) : (data.review_count ? parseInt(data.review_count, 10) : null)
+                brand: data.brand || null,
+                name: name,
+                price: price,
+                original_price: originalPrice,
+                MRP: originalPrice,
+                discount_percent: discountPercent,
+                'discount%': discountPercent,
+                rating: rating,
+                rating_count: reviewCount,
+                review_count: reviewCount,
+                color: colors.length > 0 ? colors.join(', ') : null,
+                colors: colors,
+                sizes: sizes,
+                description: data.description || null,
+                material: data.material || null,
+                image_url: imageUrl,
+                product_images: productImages,
+                product_url: productUrl,
+                merchant_url: productUrl
             };
 
-            drafts.push({
-                source_url: data.product_url || data.merchant_url || 'csv-import',
+            draftsToInsert.push({
+                source_url: productUrl,
                 status: 'draft',
                 extracted_data: extracted
             });
         }
 
-        if (drafts.length === 0) throw new Error("No valid rows found to import.");
+        if (draftsToInsert.length === 0) {
+            let msg = `No new drafts to import.`;
+            if (duplicateCount > 0) msg += ` ${duplicateCount} duplicate row(s) skipped.`;
+            if (failedCount > 0) msg += ` ${failedCount} malformed/missing-field row(s) skipped.`;
+            throw new Error(msg);
+        }
 
-        // Insert into Supabase (RLS allows if Admin)
-        const { error } = await supabaseClient.from('product_drafts').insert(drafts);
-        if (error) throw error;
+        // Batch insert in chunks of 500 to guarantee stability & display progress
+        const BATCH_SIZE = 500;
+        let insertedCount = 0;
+        for (let b = 0; b < draftsToInsert.length; b += BATCH_SIZE) {
+            const batch = draftsToInsert.slice(b, b + BATCH_SIZE);
+            setCsvLoading(true, `Importing drafts (${insertedCount + 1}-${Math.min(insertedCount + batch.length, draftsToInsert.length)} of ${draftsToInsert.length})...`);
+            
+            const { error: insertErr } = await supabaseClient
+                .from('product_drafts')
+                .insert(batch);
 
-        csvMessage.textContent = `✓ Successfully imported ${drafts.length} product drafts into staging.`;
-        csvMessage.className = 'text-xs font-semibold py-2 px-3 rounded-lg bg-green-50 text-green-700 border border-green-200';
+            if (insertErr) throw insertErr;
+            insertedCount += batch.length;
+        }
+
+        // Show comprehensive summary
+        let summaryHtml = `<strong>✓ Ingestion Complete:</strong> ${insertedCount} draft(s) imported.`;
+        if (duplicateCount > 0) summaryHtml += ` • ${duplicateCount} duplicate(s) skipped`;
+        if (failedCount > 0) summaryHtml += ` • ${failedCount} malformed/missing-field row(s) rejected`;
+        if (failedSamples.length > 0) {
+            summaryHtml += `<br><span class="opacity-80">${failedSamples.join(' | ')}</span>`;
+        }
+
+        csvMessage.innerHTML = summaryHtml;
+        csvMessage.className = 'text-xs font-semibold py-2.5 px-3.5 rounded-xl bg-green-50 text-green-800 border border-green-200';
         csvMessage.classList.remove('hidden');
         csvForm.reset();
         fileNameDisplay.textContent = "No file chosen";
@@ -321,18 +537,18 @@ csvForm.addEventListener('submit', async (e) => {
 
     } catch (err) {
         csvMessage.textContent = err.message || "Failed to parse CSV or save drafts.";
-        csvMessage.className = 'text-xs font-semibold py-2 px-3 rounded-lg bg-red-50 text-red-600 border border-red-200';
+        csvMessage.className = 'text-xs font-semibold py-2.5 px-3.5 rounded-xl bg-red-50 text-red-700 border border-red-200';
         csvMessage.classList.remove('hidden');
     } finally {
         setCsvLoading(false);
     }
 });
 
-function setCsvLoading(isLoading) {
+function setCsvLoading(isLoading, progressText = "Process & Ingest CSV") {
     if (isLoading) {
         csvInput.disabled = true;
         csvBtn.disabled = true;
-        csvBtnText.textContent = "Processing & Ingesting...";
+        csvBtnText.textContent = progressText;
         csvSpinner.classList.remove('hidden');
     } else {
         csvInput.disabled = false;

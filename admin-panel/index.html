@@ -167,17 +167,24 @@
                 </div>
 
                 <form id="csv-form" class="space-y-4">
-                    <!-- Drop Zone -->
-                    <div id="drop-zone" class="border-2 border-dashed border-sandstone hover:border-forest/40 rounded-2xl p-6 sm:p-8 text-center bg-canvas hover:bg-white transition-all cursor-pointer">
-                        <input type="file" id="csv-input" accept=".csv" class="hidden" required>
-                        <div class="w-12 h-12 rounded-2xl bg-ecru flex items-center justify-center mx-auto mb-3 text-slate">
+                    <!-- Drop Zone & File Selector -->
+                    <div id="drop-zone" class="relative border-2 border-dashed border-sandstone hover:border-forest/40 rounded-2xl p-6 sm:p-8 text-center bg-canvas hover:bg-white transition-all cursor-pointer">
+                        <!-- Accessible file input supporting Android Chrome MIME types and wildcard fallback -->
+                        <input type="file" id="csv-input" accept=".csv,text/csv,application/csv,text/comma-separated-values,application/vnd.ms-excel,text/plain,*/*" class="sr-only" required>
+                        <div class="w-12 h-12 rounded-2xl bg-ecru flex items-center justify-center mx-auto mb-3 text-slate pointer-events-none">
                             <svg class="w-6 h-6 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                         </div>
                         <p class="text-sm font-semibold text-charcoal">
-                            Drag and drop your CSV file here, or <span class="text-forest underline underline-offset-2">browse</span>
+                            Drag and drop your CSV file here, or <label for="csv-input" class="text-forest underline underline-offset-2 cursor-pointer font-bold inline-block py-1">browse device</label>
                         </p>
-                        <p id="file-name-display" class="text-xs font-mono text-slate mt-1.5">No file chosen</p>
-                        <p class="text-[11px] text-slate mt-2 max-w-lg mx-auto">
+                        <div class="mt-3 sm:hidden">
+                            <label for="csv-input" class="inline-flex items-center justify-center px-4 py-2.5 bg-surface border border-sandstone text-charcoal font-semibold text-xs rounded-xl shadow-subtle hover:bg-ecru active:scale-95 transition-all cursor-pointer">
+                                <svg class="w-4 h-4 mr-1.5 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                Choose CSV File
+                            </label>
+                        </div>
+                        <p id="file-name-display" class="text-xs font-mono text-slate mt-2">No file chosen</p>
+                        <p class="text-[11px] text-slate mt-2 max-w-lg mx-auto pointer-events-none">
                             Supports standard 14-column format: <span class="font-mono text-[10px] text-charcoal/80">site, product_id, gender, category, brand, name, price, MRP, discount%, rating, rating_count, color, image_url, product_url</span>
                         </p>
                     </div>

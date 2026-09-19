@@ -3,164 +3,437 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TiHin Admin | Product Pipeline</title>
-    <!-- Use Tailwind CSS for rapid minimal UI -->
+    <title>TiHin Admin | Catalog Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        canvas: '#FAF9F6',
+                        surface: '#FFFFFF',
+                        ecru: '#F3F1ED',
+                        sandstone: '#E5E1DC',
+                        charcoal: '#1E1E24',
+                        slate: '#6B7280',
+                        forest: '#3F5147',
+                        forestHover: '#33423A',
+                        champagne: '#C9A961',
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        serif: ['"Playfair Display"', 'serif'],
+                    },
+                    boxShadow: {
+                        'subtle': '0 2px 8px -2px rgba(30, 30, 36, 0.04), 0 1px 4px -1px rgba(30, 30, 36, 0.02)',
+                        'elevated': '0 8px 24px -4px rgba(30, 30, 36, 0.06), 0 2px 6px -1px rgba(30, 30, 36, 0.03)',
+                    }
+                }
+            }
+        }
+    </script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        /* Smooth subtle transitions */
+        .fade-in {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Custom scrollbar for preview image strips */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
 </head>
-<body class="bg-stone-50 min-h-screen font-sans text-stone-800">
-    <div id="app" class="max-w-4xl mx-auto p-6">
-        
-        <!-- Header -->
-        <header class="flex justify-between items-center mb-8 pb-4 border-b border-stone-200">
-            <div>
-                <h1 class="text-2xl font-bold text-stone-900 tracking-tight">TiHin Admin</h1>
-                <p class="text-stone-500 text-sm">Product Import Pipeline</p>
-            </div>
-            <div id="auth-state" class="text-sm font-medium">
-                <span id="user-email" class="mr-4"></span>
-                <button id="logout-btn" class="hidden text-red-600 hover:text-red-800">Logout</button>
-            </div>
-        </header>
+<body class="bg-canvas min-h-screen font-sans text-charcoal antialiased selection:bg-forest/10 selection:text-forest">
 
-        <!-- Auth Section -->
-        <section id="auth-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 max-w-md mx-auto mt-12 hidden">
-            <h2 class="text-xl font-semibold mb-4 text-center">Admin Login</h2>
-            <form id="login-form" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium mb-1">Email</label>
-                    <input type="email" id="email-input" class="w-full border border-stone-300 rounded-md p-2 focus:ring-2 focus:ring-stone-900 outline-none" required>
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-30 bg-surface/90 backdrop-blur-md border-b border-sandstone">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-forest text-white flex items-center justify-center font-serif text-lg font-bold shadow-sm">
+                    T
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1">Password</label>
-                    <input type="password" id="password-input" class="w-full border border-stone-300 rounded-md p-2 focus:ring-2 focus:ring-stone-900 outline-none" required>
+                    <div class="flex items-center gap-2">
+                        <span class="font-serif text-lg font-semibold tracking-tight text-charcoal">TiHin</span>
+                        <span class="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-forest/10 text-forest">Catalog Admin</span>
+                    </div>
+                    <p class="text-[11px] text-slate hidden sm:block">Try. Love. Buy. Catalog Pipeline</p>
                 </div>
-                <button type="submit" class="w-full bg-stone-900 text-white rounded-md py-2 font-medium hover:bg-stone-800 transition-colors">Sign In</button>
-                <p id="auth-error" class="text-red-500 text-sm text-center hidden"></p>
-            </form>
+            </div>
+
+            <!-- Auth Status Area -->
+            <div id="auth-state" class="flex items-center gap-3">
+                <span id="user-email" class="text-xs sm:text-sm font-medium text-slate truncate max-w-[140px] sm:max-w-[220px]"></span>
+                <button id="logout-btn" type="button" class="hidden text-xs sm:text-sm font-medium text-red-600 hover:text-red-700 px-3 py-1.5 rounded-lg border border-red-200/60 hover:bg-red-50 transition-colors">
+                    Log out
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+
+        <!-- Auth Section (Shown when signed out) -->
+        <section id="auth-section" class="max-w-md mx-auto my-12 hidden">
+            <div class="bg-surface p-6 sm:p-8 rounded-2xl shadow-elevated border border-sandstone">
+                <div class="text-center mb-6">
+                    <div class="w-12 h-12 rounded-xl bg-forest/10 text-forest mx-auto flex items-center justify-center font-serif text-2xl font-bold mb-3">
+                        T
+                    </div>
+                    <h2 class="text-xl font-bold tracking-tight text-charcoal">Sign in to TiHin Admin</h2>
+                    <p class="text-xs text-slate mt-1">Authorized catalog administrators only</p>
+                </div>
+
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-charcoal mb-1.5 uppercase tracking-wider">Email Address</label>
+                        <input type="email" id="email-input" class="w-full h-11 px-3.5 bg-canvas border border-sandstone rounded-xl text-sm text-charcoal placeholder-slate/60 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-forest/20 focus:border-forest transition" placeholder="admin@tihin.com" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-charcoal mb-1.5 uppercase tracking-wider">Password</label>
+                        <input type="password" id="password-input" class="w-full h-11 px-3.5 bg-canvas border border-sandstone rounded-xl text-sm text-charcoal placeholder-slate/60 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-forest/20 focus:border-forest transition" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="w-full h-11 bg-forest hover:bg-forestHover text-white font-medium text-sm rounded-xl shadow-subtle hover:shadow transition-all flex items-center justify-center">
+                        Sign In
+                    </button>
+                    <p id="auth-error" class="text-xs text-red-600 bg-red-50 p-3 rounded-lg border border-red-200 text-center hidden"></p>
+                </form>
+            </div>
         </section>
 
-        <!-- Main Workspace (Hidden until logged in) -->
-        <section id="workspace-section" class="hidden space-y-8">
-            
-            <!-- Step 1: Upload CSV -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                <h2 class="text-lg font-semibold mb-2">1. Upload CSV</h2>
-                <p class="text-stone-500 text-sm mb-4">Upload a CSV file to create product drafts. Format: <span class="font-mono text-xs">brand,name,price,original_price,description,material,sizes(pipe-separated),colors(pipe-separated),product_images(pipe-separated URLs),merchant_url</span></p>
-                <form id="csv-form" class="flex gap-4 items-center">
-                    <input type="file" id="csv-input" accept=".csv" class="flex-1 border border-stone-300 rounded-md p-2 focus:ring-2 focus:ring-stone-900 outline-none" required>
-                    <button type="submit" id="csv-btn" class="bg-stone-900 text-white px-6 py-2 rounded-md font-medium hover:bg-stone-800 transition-colors flex items-center gap-2">
-                        <span id="csv-btn-text">Process CSV</span>
-                        <div id="csv-spinner" class="hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    </button>
-                </form>
-                <p id="csv-message" class="text-sm mt-2 hidden"></p>
-            </div>
+        <!-- Main Workspace (Shown when authenticated & admin verified) -->
+        <div id="workspace-section" class="hidden space-y-8">
 
-            <!-- Step 2: Pending Drafts List -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-semibold">2. Pending Drafts</h2>
-                    <button id="refresh-drafts-btn" class="text-sm text-stone-600 hover:text-stone-900 border border-stone-200 px-3 py-1 rounded">Refresh</button>
-                </div>
-                <div id="drafts-list" class="space-y-2 max-h-60 overflow-y-auto">
-                    <p class="text-stone-500 text-sm italic">No pending drafts.</p>
-                </div>
-            </div>
-
-            <!-- Step 3: Review & Edit -->
-            <div id="review-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 hidden">
-                <div class="flex justify-between items-center mb-6">
+            <!-- 1. Dashboard Summary KPI Cards -->
+            <section aria-label="Catalog Summary" class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                <!-- Total Drafts Card -->
+                <div class="bg-surface p-4 sm:p-5 rounded-2xl border border-sandstone shadow-subtle flex items-center justify-between">
                     <div>
-                        <h2 class="text-lg font-semibold">3. Review & Publish</h2>
-                        <p class="text-stone-500 text-sm">Review extracted data before publishing to the catalog.</p>
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate">Total Pending</p>
+                        <h3 id="kpi-total-drafts" class="text-2xl sm:text-3xl font-bold text-charcoal mt-0.5">0</h3>
+                        <p class="text-[11px] text-slate mt-0.5">Awaiting review</p>
                     </div>
-                    <span id="draft-id-display" class="text-xs font-mono text-stone-400 bg-stone-100 px-2 py-1 rounded"></span>
+                    <div class="w-10 h-10 rounded-xl bg-ecru flex items-center justify-center text-charcoal">
+                        <svg class="w-5 h-5 text-slate" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    </div>
+                </div>
+
+                <!-- Ready to Publish Card -->
+                <div class="bg-surface p-4 sm:p-5 rounded-2xl border border-sandstone shadow-subtle flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-forest">Ready to Publish</p>
+                        <h3 id="kpi-ready-drafts" class="text-2xl sm:text-3xl font-bold text-forest mt-0.5">0</h3>
+                        <p class="text-[11px] text-slate mt-0.5">Brand & price complete</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-forest/10 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                </div>
+
+                <!-- Needs Review Card -->
+                <div class="bg-surface p-4 sm:p-5 rounded-2xl border border-sandstone shadow-subtle flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-amber-700">Needs Review</p>
+                        <h3 id="kpi-needs-drafts" class="text-2xl sm:text-3xl font-bold text-amber-800 mt-0.5">0</h3>
+                        <p class="text-[11px] text-slate mt-0.5">Requires brand or price</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. Import Catalog Section (Dedicated Premium Card) -->
+            <section aria-label="Import Catalog" class="bg-surface p-5 sm:p-7 rounded-2xl border border-sandstone shadow-subtle">
+                <div class="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-charcoal">Import Catalog CSV</h2>
+                        <p class="text-xs text-slate mt-0.5">Ingest supplier or scraped product feeds into the draft staging pipeline.</p>
+                    </div>
+                    <span class="text-[11px] px-2.5 py-1 rounded-full bg-ecru text-slate font-medium hidden sm:inline-block">14-Column Format</span>
+                </div>
+
+                <form id="csv-form" class="space-y-4">
+                    <!-- Drop Zone -->
+                    <div id="drop-zone" class="border-2 border-dashed border-sandstone hover:border-forest/40 rounded-2xl p-6 sm:p-8 text-center bg-canvas hover:bg-white transition-all cursor-pointer">
+                        <input type="file" id="csv-input" accept=".csv" class="hidden" required>
+                        <div class="w-12 h-12 rounded-2xl bg-ecru flex items-center justify-center mx-auto mb-3 text-slate">
+                            <svg class="w-6 h-6 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                        </div>
+                        <p class="text-sm font-semibold text-charcoal">
+                            Drag and drop your CSV file here, or <span class="text-forest underline underline-offset-2">browse</span>
+                        </p>
+                        <p id="file-name-display" class="text-xs font-mono text-slate mt-1.5">No file chosen</p>
+                        <p class="text-[11px] text-slate mt-2 max-w-lg mx-auto">
+                            Supports standard 14-column format: <span class="font-mono text-[10px] text-charcoal/80">site, product_id, gender, category, brand, name, price, MRP, discount%, rating, rating_count, color, image_url, product_url</span>
+                        </p>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+                        <div id="csv-message" class="text-xs font-medium py-1.5 px-3 rounded-lg hidden"></div>
+                        <div class="flex gap-2 justify-end">
+                            <button type="submit" id="csv-btn" class="h-11 px-6 bg-charcoal hover:bg-black text-white font-medium text-xs sm:text-sm rounded-xl shadow-subtle hover:shadow transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                                <span id="csv-btn-text">Process & Ingest CSV</span>
+                                <div id="csv-spinner" class="hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </section>
+
+            <!-- 3. Review & Edit Drawer/Panel (Appears when Review is clicked) -->
+            <section id="review-section" class="bg-surface p-5 sm:p-7 rounded-2xl border border-forest/30 shadow-elevated hidden fade-in">
+                <!-- Panel Header -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-sandstone mb-6">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-forest animate-pulse"></span>
+                            <h2 class="text-base sm:text-lg font-bold text-charcoal">Review & Edit Draft</h2>
+                        </div>
+                        <p class="text-xs text-slate mt-0.5">Inspect and refine product details before publishing to the public TiHin catalog.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span id="review-status-badge" class="px-2.5 py-1 rounded-full text-xs font-semibold"></span>
+                        <span id="draft-id-display" class="text-xs font-mono text-slate bg-ecru px-2.5 py-1 rounded-lg"></span>
+                    </div>
                 </div>
 
                 <form id="publish-form" class="space-y-6">
-                    <div class="grid grid-cols-2 gap-6">
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Brand *</label>
-                                <input type="text" id="draft-brand" class="w-full border border-stone-300 rounded-md p-2" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Product Name *</label>
-                                <input type="text" id="draft-name" class="w-full border border-stone-300 rounded-md p-2" required>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium mb-1">Price *</label>
-                                    <input type="number" step="0.01" id="draft-price" class="w-full border border-stone-300 rounded-md p-2" required>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium mb-1">Orig. Price</label>
-                                    <input type="number" step="0.01" id="draft-original-price" class="w-full border border-stone-300 rounded-md p-2">
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Description</label>
-                                <textarea id="draft-description" rows="4" class="w-full border border-stone-300 rounded-md p-2"></textarea>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Material</label>
-                                <input type="text" id="draft-material" class="w-full border border-stone-300 rounded-md p-2">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Sizes (comma separated)</label>
-                            <input type="text" id="draft-sizes" class="w-full border border-stone-300 rounded-md p-2">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Colors (comma separated)</label>
-                            <input type="text" id="draft-colors" class="w-full border border-stone-300 rounded-md p-2">
-                        </div>
-                    </div>
-
+                    <!-- Image Preview Strip -->
                     <div>
-                        <label class="block text-sm font-medium mb-1">Product Images (URLs, one per line) *</label>
-                        <textarea id="draft-images" rows="3" class="w-full border border-stone-300 rounded-md p-2 font-mono text-sm" required></textarea>
+                        <label class="block text-xs font-semibold text-charcoal mb-2 uppercase tracking-wider">Product Visuals</label>
+                        <div id="image-previews-container" class="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
+                            <div class="w-20 h-24 rounded-xl bg-ecru border border-sandstone flex items-center justify-center text-slate text-xs italic">
+                                No Image
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="flex gap-4 justify-end pt-4 border-t border-stone-200">
-                        <button type="button" id="cancel-btn" class="px-6 py-2 rounded-md font-medium text-stone-600 hover:bg-stone-100 transition-colors">Discard</button>
-                        <button type="submit" id="publish-btn" class="bg-green-700 text-white px-8 py-2 rounded-md font-medium hover:bg-green-800 transition-colors flex items-center gap-2">
-                            <span id="publish-btn-text">Publish to Catalog</span>
-                            <div id="publish-spinner" class="hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <!-- Form Sections in Organized Cards -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                        <!-- Section 1: Basic Information -->
+                        <div class="bg-canvas p-4 sm:p-5 rounded-xl border border-sandstone space-y-4">
+                            <div class="flex items-center gap-2 border-b border-sandstone/60 pb-2">
+                                <span class="w-5 h-5 rounded-full bg-white text-forest text-[11px] font-bold flex items-center justify-center border border-sandstone">1</span>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-charcoal">Basic Information</h3>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-slate mb-1">Product Title *</label>
+                                <input type="text" id="draft-name" class="w-full h-10 px-3 bg-surface border border-sandstone rounded-lg text-sm text-charcoal focus:outline-none focus:border-forest" required>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate mb-1">Brand *</label>
+                                    <input type="text" id="draft-brand" class="w-full h-10 px-3 bg-surface border border-sandstone rounded-lg text-sm text-charcoal focus:outline-none focus:border-forest" placeholder="e.g. Zara" required>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate mb-1">Origin / Site</label>
+                                    <input type="text" id="draft-site" class="w-full h-10 px-3 bg-surface border border-sandstone rounded-lg text-sm text-charcoal focus:outline-none focus:border-forest" placeholder="e.g. Myntra">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-slate mb-1">Description</label>
+                                <textarea id="draft-description" rows="3" class="w-full p-3 bg-surface border border-sandstone rounded-lg text-xs text-charcoal focus:outline-none focus:border-forest" placeholder="Product styling and fit details..."></textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-slate mb-1">Material / Fabric</label>
+                                <input type="text" id="draft-material" class="w-full h-10 px-3 bg-surface border border-sandstone rounded-lg text-sm text-charcoal focus:outline-none focus:border-forest" placeholder="e.g. 100% Cotton">
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Pricing & Promotion -->
+                        <div class="bg-canvas p-4 sm:p-5 rounded-xl border border-sandstone space-y-4">
+                            <div class="flex items-center gap-2 border-b border-sandstone/60 pb-2">
+                                <span class="w-5 h-5 rounded-full bg-white text-forest text-[11px] font-bold flex items-center justify-center border border-sandstone">2</span>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-charcoal">Pricing & Ratings</h3>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate mb-1">Selling Price (₹) *</label>
+                                    <input type="number" step="0.01" id="draft-price" class="w-full h-10 px-3 bg-surface border border-sandstone rounded-lg text-sm font-semibold text-charcoal focus:outline-none focus:border-forest" required>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate mb-1">MRP (₹)</label>
+                                    <input type="number" step="0.01" id="draft-original-price" class="w-full h-10 px-3 bg-surface border border-sandstone rounded-lg text-sm text-slate focus:outline-none focus:border-forest" placeholder="Original price">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate mb-1">Discount %</label>
+                                    <input type="number" step="0.1" id="draft-discount" class="w-full h-10 px-3 bg-surface border border-sandstone rounded-lg text-xs text-charcoal focus:outline-none focus:border-forest" placeholder="e.g. 25">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate mb-1">Rating (0-5)</label>
+                                    <input type="number" step="0.1" id="draft-rating" class="w-full h-10 px-3 bg-surface border border-sandstone rounded-lg text-xs text-charcoal focus:outline-none focus:border-forest" placeholder="e.g. 4.3">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate mb-1">Rating Count</label>
+                                    <input type="number" id="draft-review-count" class="w-full h-10 px-3 bg-surface border border-sandstone rounded-lg text-xs text-charcoal focus:outline-none focus:border-forest" placeholder="e.g. 128">
+                                </div>
+                            </div>
+
+                            <div class="pt-2 border-t border-sandstone/60">
+                                <label class="block text-xs font-medium text-slate mb-1">External Product ID</label>
+                                <input type="text" id="draft-external-id" class="w-full h-10 px-3 bg-surface border border-sandstone rounded-lg text-xs font-mono text-charcoal focus:outline-none focus:border-forest" placeholder="e.g. MYNTRA_1289412">
+                            </div>
+                        </div>
+
+                        <!-- Section 3: Product Metadata (Variants & Categories) -->
+                        <div class="bg-canvas p-4 sm:p-5 rounded-xl border border-sandstone space-y-4">
+                            <div class="flex items-center gap-2 border-b border-sandstone/60 pb-2">
+                                <span class="w-5 h-5 rounded-full bg-white text-forest text-[11px] font-bold flex items-center justify-center border border-sandstone">3</span>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-charcoal">Metadata & Variants</h3>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate mb-1">Gender</label>
+                                    <input type="text" id="draft-gender" class="w-full h-10 px-3 bg-surface border border-sandstone rounded-lg text-sm text-charcoal focus:outline-none focus:border-forest" placeholder="Women / Men">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate mb-1">Category</label>
+                                    <input type="text" id="draft-category" class="w-full h-10 px-3 bg-surface border border-sandstone rounded-lg text-sm text-charcoal focus:outline-none focus:border-forest" placeholder="Dresses, Tops">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate mb-1">Colors (comma separated)</label>
+                                    <input type="text" id="draft-colors" class="w-full h-10 px-3 bg-surface border border-sandstone rounded-lg text-xs text-charcoal focus:outline-none focus:border-forest" placeholder="Olive, Forest Green">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate mb-1">Sizes (comma separated)</label>
+                                    <input type="text" id="draft-sizes" class="w-full h-10 px-3 bg-surface border border-sandstone rounded-lg text-xs text-charcoal focus:outline-none focus:border-forest" placeholder="XS, S, M, L">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 4: Images & Source Links -->
+                        <div class="bg-canvas p-4 sm:p-5 rounded-xl border border-sandstone space-y-4">
+                            <div class="flex items-center gap-2 border-b border-sandstone/60 pb-2">
+                                <span class="w-5 h-5 rounded-full bg-white text-forest text-[11px] font-bold flex items-center justify-center border border-sandstone">4</span>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-charcoal">Images & Links</h3>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-slate mb-1">Merchant / Product Purchase URL *</label>
+                                <input type="url" id="draft-product-url" class="w-full h-10 px-3 bg-surface border border-sandstone rounded-lg text-xs text-charcoal font-mono focus:outline-none focus:border-forest" placeholder="https://..." required>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-slate mb-1">Image URLs (one per line) *</label>
+                                <textarea id="draft-images" rows="3" class="w-full p-2.5 bg-surface border border-sandstone rounded-lg font-mono text-xs text-charcoal focus:outline-none focus:border-forest" placeholder="https://..." required></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Publish Actions Footer -->
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-4 border-t border-sandstone">
+                        <div id="publish-message" class="text-xs font-medium"></div>
+
+                        <div class="flex items-center gap-3 justify-end">
+                            <button type="button" id="cancel-btn" class="h-11 px-5 rounded-xl font-medium text-xs sm:text-sm text-slate hover:text-charcoal hover:bg-ecru transition-colors">
+                                Discard & Close
+                            </button>
+                            <button type="submit" id="publish-btn" class="h-11 px-7 bg-forest hover:bg-forestHover text-white font-medium text-xs sm:text-sm rounded-xl shadow-subtle hover:shadow transition-all flex items-center justify-center gap-2">
+                                <span id="publish-btn-text">Publish to Catalog</span>
+                                <div id="publish-spinner" class="hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </section>
+
+            <!-- 4. Pending Drafts Section -->
+            <section aria-label="Catalog Drafts" class="bg-surface p-5 sm:p-7 rounded-2xl border border-sandstone shadow-subtle space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-charcoal">Pending Drafts Queue</h2>
+                        <p class="text-xs text-slate mt-0.5">Review items extracted from CSV uploads before catalog activation.</p>
+                    </div>
+                    <button id="refresh-drafts-btn" type="button" class="self-start sm:self-auto h-9 px-4 text-xs font-semibold text-charcoal bg-canvas hover:bg-ecru border border-sandstone rounded-xl transition flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-slate" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Refresh Queue
+                    </button>
+                </div>
+
+                <!-- Filters & Search Toolbar -->
+                <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                    <!-- Search Input -->
+                    <div class="relative flex-1">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                            <svg class="w-4 h-4 text-slate" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <input type="text" id="search-input" class="w-full h-10 pl-10 pr-4 bg-canvas border border-sandstone rounded-xl text-xs sm:text-sm text-charcoal placeholder-slate/70 focus:bg-surface focus:outline-none focus:border-forest transition" placeholder="Search by product name, brand, or category...">
+                    </div>
+
+                    <!-- Filter Pills -->
+                    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+                        <button type="button" data-filter="all" class="filter-pill active-pill h-10 px-3.5 rounded-xl text-xs font-semibold border transition whitespace-nowrap bg-charcoal text-white border-charcoal">
+                            All (<span id="filter-count-all">0</span>)
+                        </button>
+                        <button type="button" data-filter="ready" class="filter-pill h-10 px-3.5 rounded-xl text-xs font-semibold border border-sandstone bg-canvas text-charcoal hover:bg-ecru transition whitespace-nowrap">
+                            Ready (<span id="filter-count-ready">0</span>)
+                        </button>
+                        <button type="button" data-filter="needs_review" class="filter-pill h-10 px-3.5 rounded-xl text-xs font-semibold border border-sandstone bg-canvas text-charcoal hover:bg-ecru transition whitespace-nowrap">
+                            Needs Review (<span id="filter-count-needs">0</span>)
                         </button>
                     </div>
-                    <p id="publish-message" class="text-sm text-right mt-2 font-medium"></p>
-                </form>
-            </div>
-        </section>
-    </div>
+                </div>
+
+                <!-- Drafts List Container -->
+                <div id="drafts-list" class="space-y-3 pt-2">
+                    <p class="text-slate text-xs italic py-6 text-center">Loading drafts...</p>
+                </div>
+            </section>
+
+        </div>
+    </main>
 
     <!-- Configuration Modal (Hidden by default, used if Supabase URL/Key missing) -->
-    <div id="config-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center backdrop-blur-sm z-50">
-        <div class="bg-white p-6 rounded-xl max-w-md w-full m-4 shadow-lg">
-            <h2 class="text-xl font-bold mb-4">Admin Configuration</h2>
-            <p class="text-sm text-stone-500 mb-4">Enter your Supabase project credentials to connect the admin panel.</p>
+    <div id="config-modal" class="fixed inset-0 bg-charcoal/40 hidden items-center justify-center backdrop-blur-sm z-50 p-4">
+        <div class="bg-surface p-6 sm:p-7 rounded-2xl max-w-md w-full shadow-elevated border border-sandstone">
+            <h2 class="text-lg font-bold text-charcoal mb-1">Connect Supabase Project</h2>
+            <p class="text-xs text-slate mb-5">Enter project credentials to connect this admin session.</p>
             <form id="config-form" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium mb-1">Supabase URL</label>
-                    <input type="url" id="config-url" class="w-full border border-stone-300 rounded-md p-2" required>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-charcoal mb-1">Supabase URL</label>
+                    <input type="url" id="config-url" class="w-full h-11 px-3.5 bg-canvas border border-sandstone rounded-xl text-xs text-charcoal focus:bg-surface focus:outline-none focus:border-forest" placeholder="https://xyz.supabase.co" required>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1">Supabase Anon Key</label>
-                    <input type="password" id="config-key" class="w-full border border-stone-300 rounded-md p-2" required>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-charcoal mb-1">Supabase Anon Key</label>
+                    <input type="password" id="config-key" class="w-full h-11 px-3.5 bg-canvas border border-sandstone rounded-xl text-xs text-charcoal focus:bg-surface focus:outline-none focus:border-forest" placeholder="eyJ..." required>
                 </div>
-                <button type="submit" class="w-full bg-stone-900 text-white rounded-md py-2 font-medium">Save & Connect</button>
+                <button type="submit" class="w-full h-11 bg-forest hover:bg-forestHover text-white font-medium text-xs sm:text-sm rounded-xl transition">
+                    Save & Connect
+                </button>
             </form>
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="config.js"></script>
     <script src="app.js"></script>
 </body>

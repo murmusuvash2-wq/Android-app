@@ -113,9 +113,30 @@ There is exactly **one reusable Universal Try-On pipeline** across the entire ap
 
 ---
 
-## 9. Hero Assets Preservation
+## 9. Hero Assets Preservation & "See the Magic" Curated Experience
 
-- Manually provided hero assets and showcase carousel pairings must **never** be regenerated, overwritten, or replaced by automated tools.
+- **Curated Editorial Showcase:** The "See the Magic" section is a strictly curated TiHin editorial showcase, completely controlled by TiHin.
+- **Strict Prohibition on Automated Generation:** "See the Magic" must **NEVER** be automatically generated from the scraped product catalog, scrapers, or background imports.
+- **Editorial Control Mandate:** TiHin retains full manual editorial control over:
+  - Which product is featured (`productId`)
+  - Which fashion model is shown
+  - Which worn/look image is paired with that product (`wornImage`)
+  - The display order (`sortOrder`)
+  - The active/inactive visibility state (`isActive`)
+- **Visual Pairing Concept:**
+  - **LEFT:** Selected product / hanger presentation (`hangerImage`)
+  - **RIGHT:** The **SAME** selected product being worn by our selected fashion model (`wornImage`)
+  - **CENTER:** Subtle magic / transition cue
+  - *Core Constraint:* The left and right visuals must always represent the **exact same product**.
+- **HeroLook Architecture:**
+  - Must strictly use the canonical `HeroLook` model (`id`, `productId`, `name`, `description`, `hangerImage`, `wornImage`, `brand`, `price`, `sortOrder`, `isActive`).
+- **Forbidden Actions:**
+  - ❌ Do NOT auto-generate `HeroLooks` from scraped products.
+  - ❌ Do NOT randomly select models or use arbitrary product/model combinations.
+  - ❌ Do NOT allow catalog scraping or bulk ingestion to touch or control "See the Magic".
+  - ❌ Do NOT redesign Home navigation.
+  - ❌ Do NOT add new unrequested features.
+  - Manually provided hero assets and showcase carousel pairings must **never** be regenerated, overwritten, or replaced by automated tools.
 
 ---
 

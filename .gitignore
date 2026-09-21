@@ -1,22 +1,30 @@
+# Android & Build Artifacts
 *.iml
 .gradle
 .kotlin
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+/.idea/
 .DS_Store
 /build
+app/build/
 /captures
 .externalNativeBuild
 .cxx
 local.properties
+
+# Secrets & Config
 .env
 debug.keystore
 debug.keystore.base64
+
+# Development Scripts & Ad-hoc Tools
+get_user.js
+fix_*.js
+patch_*.js
+test_*.js
+simulate_*.js
+query_*.js
+revert.js
 test_results.txt
 
 # Development tooling & logs

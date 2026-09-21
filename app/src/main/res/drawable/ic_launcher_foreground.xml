@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- TiHin Icon Letter T and H stylized luxury motif -->
+    <path
+        android:fillColor="#3F5147"
+        android:pathData="M34,36 h40 v8 h-16 v28 h-8 v-28 h-16 z" />
+</vector>

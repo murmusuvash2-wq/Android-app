@@ -19,8 +19,8 @@ export class AiProviderRouter {
 
   constructor(customProviders?: AiTryOnProvider[]) {
     this.providers = customProviders || [
-      new GeminiTryOnProvider(),
-      new ApprovedTestTryOnProvider()
+      new ApprovedTestTryOnProvider(),
+      new GeminiTryOnProvider()
     ];
   }
 

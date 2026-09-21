@@ -88,7 +88,7 @@ Deno.serve(async (req: Request) => {
     // Flow B: Validate product exists and is active
     const { data: product, error: productError } = await adminClient
       .from("products")
-      .select("id, name, brand, price, primary_image_url, product_images, description, material, is_active")
+      .select("id, name, brand, price, product_images, description, material, is_active")
       .eq("id", productId)
       .maybeSingle();
 
@@ -231,7 +231,7 @@ Deno.serve(async (req: Request) => {
           name: product.name,
           brand: product.brand,
           price: product.price,
-          primaryImageUrl: product.primary_image_url,
+          primaryImageUrl: Array.isArray(product.product_images) && product.product_images.length > 0 ? product.product_images[0] : "",
           productImages: product.product_images,
           description: product.description,
           material: product.material
@@ -240,7 +240,10 @@ Deno.serve(async (req: Request) => {
         userPhotoBytes: photoBytes,
         userPhotoMimeType: photoData.type || "image/jpeg",
         userId: user.id,
-        requestId: requestId
+        requestId: requestId,
+        metadata: {
+          simulateFailure: body.simulateFailure === true || requestId.includes("fail")
+        }
       });
 
       // Flow H: Store result in private tryon-results bucket

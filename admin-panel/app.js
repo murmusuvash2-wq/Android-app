@@ -377,26 +377,67 @@ csvForm.addEventListener('submit', async (e) => {
             throw new Error(`CSV is missing required columns: ${missingHeaders.join(', ')}`);
         }
 
-        // Fetch existing drafts to check site + product_id duplicates in DB
-        setCsvLoading(true, "Checking existing database drafts...");
-        const { data: existingDrafts, error: fetchErr } = await supabaseClient
-            .from('product_drafts')
-            .select('extracted_data')
-            .eq('status', 'draft');
+        // Fetch ALL existing drafts to check site + product_id duplicates in DB (Paginated)
+        setCsvLoading(true, "Checking existing database drafts and published products...");
+        const seenKeys = new Set();
+        let dedupFrom = 0;
+        const DEDUP_PAGE_SIZE = 1000;
+        let hasMoreDedup = true;
 
-        if (fetchErr) {
-            console.warn("Could not query existing drafts for deduping:", fetchErr);
+        while (hasMoreDedup) {
+            const { data: chunk, error: fetchErr } = await supabaseClient
+                .from('product_drafts')
+                .select('extracted_data')
+                .eq('status', 'draft')
+                .range(dedupFrom, dedupFrom + DEDUP_PAGE_SIZE - 1);
+
+            if (fetchErr) {
+                console.warn("Could not query existing drafts for deduping:", fetchErr);
+                break;
+            }
+
+            if (chunk && chunk.length > 0) {
+                for (const d of chunk) {
+                    const ed = d.extracted_data || {};
+                    const site = (ed.site || '').trim().toLowerCase();
+                    const pid = String(ed.external_product_id || ed.product_id || '').trim();
+                    if (site && pid) {
+                        seenKeys.add(`${site}:${pid}`);
+                    }
+                }
+                dedupFrom += DEDUP_PAGE_SIZE;
+                hasMoreDedup = chunk.length === DEDUP_PAGE_SIZE;
+            } else {
+                hasMoreDedup = false;
+            }
         }
 
-        const seenKeys = new Set();
-        if (existingDrafts) {
-            for (const d of existingDrafts) {
-                const ed = d.extracted_data || {};
-                const site = (ed.site || '').trim().toLowerCase();
-                const pid = String(ed.external_product_id || ed.product_id || '').trim();
-                if (site && pid) {
-                    seenKeys.add(`${site}:${pid}`);
+        // Also fetch published products to prevent re-importing already cataloged products
+        let prodDedupFrom = 0;
+        let hasMoreProdDedup = true;
+        while (hasMoreProdDedup) {
+            const { data: prodChunk, error: prodErr } = await supabaseClient
+                .from('products')
+                .select('site, external_product_id')
+                .range(prodDedupFrom, prodDedupFrom + DEDUP_PAGE_SIZE - 1);
+
+            if (prodErr) {
+                console.warn("Could not query existing products for deduping:", prodErr);
+                break;
+            }
+
+            if (prodChunk && prodChunk.length > 0) {
+                for (const p of prodChunk) {
+                    const site = (p.site || '').trim().toLowerCase();
+                    const pid = String(p.external_product_id || '').trim();
+                    if (site && pid) {
+                        seenKeys.add(`${site}:${pid}`);
+                    }
                 }
+                prodDedupFrom += DEDUP_PAGE_SIZE;
+                hasMoreProdDedup = prodChunk.length === DEDUP_PAGE_SIZE;
+            } else {
+                hasMoreProdDedup = false;
             }
         }
 
@@ -438,6 +479,22 @@ csvForm.addEventListener('submit', async (e) => {
                 continue;
             }
 
+            // Validate that product_url and image_url are absolute http/https
+            if (!productUrl.startsWith('http://') && !productUrl.startsWith('https://')) {
+                failedCount++;
+                if (failedSamples.length < 3) {
+                    failedSamples.push(`Row ${rowNum}: product_url must be an absolute http/https URL`);
+                }
+                continue;
+            }
+            if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+                failedCount++;
+                if (failedSamples.length < 3) {
+                    failedSamples.push(`Row ${rowNum}: image_url must be an absolute http/https URL`);
+                }
+                continue;
+            }
+
             // Duplicate detection using site + product_id
             const dedupKey = `${site.toLowerCase()}:${String(productId)}`;
             if (seenKeys.has(dedupKey)) {
@@ -446,17 +503,44 @@ csvForm.addEventListener('submit', async (e) => {
             }
             seenKeys.add(dedupKey);
 
-            // Parse optional fields while preserving values
+            // Parse optional fields while preserving values & validating bounds
             const price = data.price != null && !isNaN(parseFloat(data.price)) ? parseFloat(data.price) : null;
+            if (price !== null && price < 0) {
+                failedCount++;
+                if (failedSamples.length < 3) failedSamples.push(`Row ${rowNum}: price cannot be negative`);
+                continue;
+            }
+
             const mrpRaw = data.mrp || data.MRP || data.original_price;
             const originalPrice = mrpRaw != null && !isNaN(parseFloat(mrpRaw)) ? parseFloat(mrpRaw) : null;
+            if (originalPrice !== null && originalPrice < 0) {
+                failedCount++;
+                if (failedSamples.length < 3) failedSamples.push(`Row ${rowNum}: MRP/original_price cannot be negative`);
+                continue;
+            }
             
             const discRaw = data['discount%'] || data.discount_percent;
             const discountPercent = discRaw != null && !isNaN(parseFloat(discRaw)) ? parseFloat(discRaw) : null;
+            if (discountPercent !== null && (discountPercent < 0 || discountPercent > 100)) {
+                failedCount++;
+                if (failedSamples.length < 3) failedSamples.push(`Row ${rowNum}: discount% must be between 0 and 100`);
+                continue;
+            }
 
             const rating = data.rating != null && !isNaN(parseFloat(data.rating)) ? parseFloat(data.rating) : null;
+            if (rating !== null && (rating < 0 || rating > 5)) {
+                failedCount++;
+                if (failedSamples.length < 3) failedSamples.push(`Row ${rowNum}: rating must be between 0 and 5`);
+                continue;
+            }
+
             const ratingCountRaw = data.rating_count || data.review_count;
             const reviewCount = ratingCountRaw != null && !isNaN(parseInt(ratingCountRaw, 10)) ? parseInt(ratingCountRaw, 10) : null;
+            if (reviewCount !== null && reviewCount < 0) {
+                failedCount++;
+                if (failedSamples.length < 3) failedSamples.push(`Row ${rowNum}: rating_count cannot be negative`);
+                continue;
+            }
 
             const sizes = data.sizes ? data.sizes.split('|').map(s => s.trim()).filter(Boolean) : [];
             const colors = data.colors ? data.colors.split('|').map(c => c.trim()).filter(Boolean) : (data.color ? data.color.split('|').map(c => c.trim()).filter(Boolean) : []);
@@ -562,31 +646,49 @@ function setCsvLoading(isLoading, progressText = "Process & Ingest CSV") {
 // Classification Helper: Ready to Publish vs Needs Review
 // -------------------------------------------------------------
 function isDraftReadyToPublish(extracted) {
+    if (extracted.review_status === 'needs_review') return false;
     const hasBrand = Boolean(extracted.brand && extracted.brand.trim() !== '');
     const hasPrice = extracted.price != null && !isNaN(extracted.price) && extracted.price >= 0;
     return hasBrand && hasPrice;
 }
 
 // -------------------------------------------------------------
-// Load Drafts & KPI Updates
+// Load Drafts & KPI Updates (Paginated through all drafts)
 // -------------------------------------------------------------
 async function loadDrafts() {
     if (!draftsList) return;
     
     try {
         draftsList.innerHTML = '<div class="py-8 text-center"><div class="w-6 h-6 border-2 border-forest border-t-transparent rounded-full animate-spin mx-auto mb-2"></div><p class="text-slate text-xs italic">Fetching pending drafts from catalog pipeline...</p></div>';
-        const { data, error } = await supabaseClient
-            .from('product_drafts')
-            .select('*')
-            .eq('status', 'draft')
-            .order('created_at', { ascending: false });
+        
+        let allRecords = [];
+        let from = 0;
+        const PAGE_SIZE = 1000;
+        let hasMore = true;
 
-        if (error) {
-            draftsList.innerHTML = `<div class="p-4 bg-red-50 text-red-600 rounded-xl text-xs border border-red-200">Error loading drafts: ${error.message}</div>`;
-            return;
+        while (hasMore) {
+            const { data, error } = await supabaseClient
+                .from('product_drafts')
+                .select('*')
+                .eq('status', 'draft')
+                .order('created_at', { ascending: false })
+                .range(from, from + PAGE_SIZE - 1);
+
+            if (error) {
+                draftsList.innerHTML = `<div class="p-4 bg-red-50 text-red-600 rounded-xl text-xs border border-red-200">Error loading drafts: ${error.message}</div>`;
+                return;
+            }
+
+            if (data && data.length > 0) {
+                allRecords = allRecords.concat(data);
+                from += PAGE_SIZE;
+                hasMore = data.length === PAGE_SIZE;
+            } else {
+                hasMore = false;
+            }
         }
 
-        allDrafts = data || [];
+        allDrafts = allRecords;
         updateKpisAndCounters();
         renderDraftsList();
 

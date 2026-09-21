@@ -2,11 +2,12 @@ import { AiTryOnProvider, TryOnProviderRequest, TryOnProviderResult } from "./ty
 
 /**
  * Production-ready Gemini AI Try-On Provider.
- * Requires GEMINI_API_KEY or GOOGLE_AI_API_KEY in Edge Function secrets.
+ * Uses Google's image-capable Gemini model (gemini-3.1-flash-image) for high-fidelity virtual try-on.
  * Strictly executes server-side; API keys never enter client/Android code.
  */
 export class GeminiTryOnProvider implements AiTryOnProvider {
   readonly name = "gemini";
+  private readonly primaryModel = "gemini-3.1-flash-image";
 
   isConfigured(): boolean {
     const key = this.getApiKey();
@@ -37,78 +38,123 @@ export class GeminiTryOnProvider implements AiTryOnProvider {
       throw new Error("User photo data is required for virtual try-on generation.");
     }
 
-    // Convert user photo bytes to base64
-    const photoBase64 = this.uint8ArrayToBase64(request.userPhotoBytes);
-    const mimeType = request.userPhotoMimeType || "image/jpeg";
+    // 1. User photo (authoritative person reference)
+    const userPhotoBase64 = this.uint8ArrayToBase64(request.userPhotoBytes);
+    const userMimeType = request.userPhotoMimeType || "image/jpeg";
 
-    const prompt = `Task: High-fidelity virtual try-on.
-Garment to wear: ${request.product.name} by ${request.product.brand}.
-Material: ${request.product.material || "High quality fabric"}.
-Description: ${request.product.description || ""}.
+    // 2. Product garment image (authoritative garment reference)
+    let productPhotoBase64: string | null = null;
+    let productMimeType = "image/jpeg";
+    const productImageUrl = request.product.primaryImageUrl || request.product.productImages?.[0];
 
-Instructions:
-1. Preserve user's identity, face, body proportions, natural pose, hair, and background completely.
-2. Replace or drape the garment accurately on the user, matching the exact garment color, fabric texture, pattern, cut, neckline, sleeves, and silhouette.
-3. Apply realistic lighting, shadows, and natural folds.
-4. Never redesign, invent, or distort garment details.`;
+    if (productImageUrl && productImageUrl.startsWith("http")) {
+      try {
+        const prodRes = await fetch(productImageUrl);
+        if (prodRes.ok) {
+          const prodBuf = await prodRes.arrayBuffer();
+          productPhotoBase64 = this.uint8ArrayToBase64(new Uint8Array(prodBuf));
+          productMimeType = prodRes.headers.get("content-type") || "image/jpeg";
+        }
+      } catch (err) {
+        console.warn("Could not fetch product reference image, relying on text metadata:", err);
+      }
+    }
 
-    // Call Gemini API with multimodal input
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    // 3. Construct detailed try-on prompt
+    const prompt = `Task: Realistic virtual fashion try-on.
 
+Reference Images:
+1. User Photo (Person Reference): Authoritative for the person's identity, facial features, skin tone, hair, body proportions, natural pose, and environment.
+2. Garment Reference: Authoritative for the clothing item: ${request.product.name} by ${request.product.brand}${request.product.material ? `, Material: ${request.product.material}` : ""}${request.product.description ? `, Description: ${request.product.description}` : ""}.
+
+Mandatory Instructions:
+1. Generate a high-resolution photographic result of the SAME PERSON from the User Photo wearing the EXACT garment from the Garment Reference.
+2. Preserve the person's exact face, identity, hair, expression, skin tone, body shape, and pose completely.
+3. Replace/overlay ONLY the clothing on the person with the selected garment.
+4. Faithfully preserve the garment's exact color, fabric texture, pattern, cut, neckline, sleeves, seams, drape, and silhouette.
+5. Fit the garment naturally to the person's posture and body contour with realistic shadows, fabric creases, and ambient lighting matching the scene.
+6. Do NOT redesign the garment. Do NOT invent new garment details. Do NOT add accessories, jewelry, or shoes. Do NOT change the background unless necessary for seamless composite blending.
+7. Return an image output only.`;
+
+    // 4. Build multimodal parts
+    const parts: any[] = [
+      { text: prompt },
+      {
+        inline_data: {
+          mime_type: userMimeType,
+          data: userPhotoBase64
+        }
+      }
+    ];
+
+    if (productPhotoBase64) {
+      parts.push({
+        inline_data: {
+          mime_type: productMimeType,
+          data: productPhotoBase64
+        }
+      });
+    }
+
+    const requestBody = {
+      contents: [
+        {
+          parts: parts
+        }
+      ],
+      generationConfig: {
+        responseModalities: ["IMAGE"],
+        imageConfig: {
+          aspectRatio: "3:4",
+          imageSize: "1K"
+        }
+      }
+    };
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.primaryModel}:generateContent?key=${apiKey}`;
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: prompt },
-              {
-                inline_data: {
-                  mime_type: mimeType,
-                  data: photoBase64
-                }
-              }
-            ]
-          }
-        ]
-      })
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      throw new Error(`Gemini generation failed (${response.status}): ${errText}`);
+      if (response.status === 429) {
+        throw new Error(`Gemini API quota exhausted (429) on model ${this.primaryModel}: ${errText}`);
+      }
+      throw new Error(`Gemini API error (${response.status}) using model ${this.primaryModel}: ${errText}`);
     }
 
     const data = await response.json();
     const candidate = data.candidates?.[0];
     if (!candidate) {
-      throw new Error("Gemini returned empty candidate response.");
+      throw new Error(`Gemini (${this.primaryModel}) returned empty candidate response.`);
     }
 
-    // Extract image or structured result
-    // In multimodal outputs where image bytes are returned or generated
+    // Check for generated image in parts (supporting both camelCase and snake_case)
     const partWithImage = candidate.content?.parts?.find(
-      (p: any) => p.inline_data || p.inlineData
+      (p: any) => p.inlineData || p.inline_data
     );
 
     if (partWithImage) {
-      const imgData = partWithImage.inline_data || partWithImage.inlineData;
+      const imgData = partWithImage.inlineData || partWithImage.inline_data;
+      const mimeType = imgData.mimeType || imgData.mime_type || "image/jpeg";
       const resBytes = this.base64ToUint8Array(imgData.data);
+
       return {
         imageBytes: resBytes,
-        mimeType: imgData.mime_type || "image/jpeg",
+        mimeType: mimeType,
         providerName: this.name,
         watermarkApplied: true,
         metadata: {
-          model: "gemini-2.5-flash",
+          model: this.primaryModel,
           finishReason: candidate.finishReason || "STOP"
         }
       };
     }
 
-    // If text response only (e.g. guidance or model without direct image synthesis part)
-    throw new Error("Gemini response did not contain image data for try-on visualization.");
+    throw new Error(`Gemini (${this.primaryModel}) response did not contain image data in candidates.`);
   }
 
   private uint8ArrayToBase64(bytes: Uint8Array): string {
@@ -130,3 +176,4 @@ Instructions:
     return bytes;
   }
 }
+

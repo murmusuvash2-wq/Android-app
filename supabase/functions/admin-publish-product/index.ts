@@ -46,9 +46,13 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Missing draft_id or updated_data" }), { status: 400, headers: corsHeaders });
     }
 
-    // 2. Validate product name and price
+    // 2. Validate product name, brand, and price
     if (!updated_data.name || typeof updated_data.name !== "string" || updated_data.name.trim().length === 0) {
       return new Response(JSON.stringify({ error: "Product name is required." }), { status: 400, headers: corsHeaders });
+    }
+
+    if (!updated_data.brand || typeof updated_data.brand !== "string" || updated_data.brand.trim().length === 0) {
+      return new Response(JSON.stringify({ error: "Product brand is required." }), { status: 400, headers: corsHeaders });
     }
 
     const price = Number(updated_data.price);
@@ -80,10 +84,16 @@ serve(async (req) => {
     const reviewCount = updated_data.review_count !== undefined && updated_data.review_count !== null && updated_data.review_count !== ""
       ? parseInt(updated_data.review_count, 10)
       : (updated_data.rating_count !== undefined && updated_data.rating_count !== null && updated_data.rating_count !== "" ? parseInt(updated_data.rating_count, 10) : null);
+    if (reviewCount !== null && (isNaN(reviewCount) || reviewCount < 0)) {
+      return new Response(JSON.stringify({ error: `Invalid review count: ${reviewCount}. Must be a non-negative integer.` }), { status: 400, headers: corsHeaders });
+    }
 
     // Normalize and validate images
     const rawImages = updated_data.product_images || (updated_data.image_url ? [updated_data.image_url] : []);
     const images = Array.isArray(rawImages) ? rawImages.filter(Boolean) : [rawImages];
+    if (images.length === 0) {
+      return new Response(JSON.stringify({ error: "At least one product image URL is required." }), { status: 400, headers: corsHeaders });
+    }
     for (const url of images) {
       if (typeof url !== "string" || (!url.startsWith("http://") && !url.startsWith("https://"))) {
         return new Response(JSON.stringify({ error: `Invalid image URL: ${url}. Must be absolute HTTP/HTTPS.` }), { status: 400, headers: corsHeaders });
@@ -110,6 +120,26 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: `Invalid merchant/product URL: ${merchantUrl}. Must be absolute HTTP/HTTPS.` }), { status: 400, headers: corsHeaders });
     }
 
+    // Check duplicate in public.products by (site, external_product_id) if both present
+    const externalProductId = updated_data.external_product_id || updated_data.product_id || null;
+    const site = updated_data.site || null;
+    if (site && externalProductId) {
+      const { data: existingProduct, error: dupCheckError } = await supabaseAdmin
+        .from("products")
+        .select("id")
+        .eq("site", site)
+        .eq("external_product_id", externalProductId)
+        .maybeSingle();
+
+      if (dupCheckError) {
+        console.warn("Could not check duplicate in products:", dupCheckError);
+      } else if (existingProduct) {
+        return new Response(JSON.stringify({ 
+          error: `Duplicate product: A product from site '${site}' with external ID '${externalProductId}' already exists (ID: ${existingProduct.id}).` 
+        }), { status: 409, headers: corsHeaders });
+      }
+    }
+
     // Normalize colors and sizes
     const rawColors = updated_data.colors || (updated_data.color ? [updated_data.color] : null);
     const colors = Array.isArray(rawColors) ? rawColors : (rawColors ? [rawColors] : null);
@@ -122,7 +152,7 @@ serve(async (req) => {
     const productPayload = {
       id: newProductId,
       name: updated_data.name.trim(),
-      brand: (updated_data.brand || "Unknown").trim(),
+      brand: updated_data.brand.trim(),
       price: price,
       original_price: originalPrice,
       rating: rating,
@@ -133,8 +163,8 @@ serve(async (req) => {
       colors: colors,
       product_images: images,
       merchant_url: merchantUrl,
-      external_product_id: updated_data.external_product_id || updated_data.product_id || null,
-      site: updated_data.site || null,
+      external_product_id: externalProductId,
+      site: site,
       gender: updated_data.gender || null,
       category: updated_data.category || null,
       discount_percent: discountPercent,

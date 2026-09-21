@@ -17,6 +17,7 @@ export interface TryOnProviderRequest {
   userPhotoMimeType?: string;
   userId: string;
   requestId: string;
+  metadata?: Record<string, any>;
 }
 
 export interface TryOnProviderResult {

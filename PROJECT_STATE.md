@@ -78,10 +78,10 @@ Splash
 - **Backend Needed:** Real OAuth2 / Google Credential Manager and Firebase Authentication or custom auth backend.
 
 ### Home Tab (`HomeScreen.kt`)
-- **Status:** IMPLEMENTED (Local Mock Data)
+- **Status:** IMPLEMENTED (Curated Editorial Data)
 - **Features:**
   - Header with credit pill (hidden for guests, navigates to Credit Store).
-  - "See the magic" hero showcase carousel: Side-by-side garment and model cards with auto-scroll and direct "Try this look" CTA.
+  - "See the magic" hero showcase carousel: Strictly curated TiHin editorial showcase (LEFT = hanger presentation, RIGHT = same product worn by selected fashion model, CENTER = magic cue) using the `HeroLook` model. NEVER auto-populated from scraped catalogs. Direct "Try this look" CTA.
   - Quick action buttons: "Take Photo" and "Choose Photo" via Android Photo Picker (`ActivityResultContracts.PickVisualMedia`).
   - "Try Trending Looks" horizontal feed with try-on count badges and "View All" link to Looks.
 

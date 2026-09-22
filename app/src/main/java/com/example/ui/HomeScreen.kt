@@ -511,15 +511,16 @@ private fun CategoryChip(label: String, imageUrl: String?, onClick: () -> Unit) 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-             .width(64.dp)
+             .width(72.dp)
             .clickable(onClick = onClick)
     ) {
         Box(
             modifier = Modifier
-                 .size(54.dp)
-                .clip(CircleShape)
+                 .height(68.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
                 .background(SurfaceColor)
-                .border(1.dp, CardBorder, CircleShape)
+                .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
         ) {
             if (!imageUrl.isNullOrBlank()) {
                 AsyncImage(
@@ -536,7 +537,8 @@ private fun CategoryChip(label: String, imageUrl: String?, onClick: () -> Unit) 
                     Icons.Default.Tune,
                     contentDescription = label,
                     tint = DeepForest,
-                    modifier = Modifier.align(Alignment.Center) .size(20.dp)
+                    modifier = Modifier.align(Alignment.Center)
+                        .size(20.dp)
                 )
             }
         }
@@ -570,12 +572,12 @@ private fun TrendingEditorial(
     ) {
         EditorialFeatureCard(
             product = feature,
-            modifier = Modifier.weight(1.08f).height(250.dp),
+            modifier = Modifier.weight(1.08f).height(238.dp),
             onTryOn = { onTryOn(feature) }
         )
 
         Column(
-            modifier = Modifier.weight(0.92f).height(250.dp),
+            modifier = Modifier.weight(0.92f).height(238.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             sideProducts.forEach { product ->
@@ -756,7 +758,7 @@ private fun HomeProductCard(product: Product, onTryOn: () -> Unit) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                     .height(170.dp)
+                     .height(182.dp)
                     .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
                     .background(SurfaceVariantColor)
             ) {
@@ -802,7 +804,7 @@ private fun HomeProductCard(product: Product, onTryOn: () -> Unit) {
                 }
             }
 
-            Column(modifier = Modifier.padding(horizontal = 11.dp, vertical = 10.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 11.dp, vertical = 9.dp)) {
                 Text(
                     text = product.brand.ifBlank { "TiHin Edit" }.uppercase(),
                     fontFamily = Inter,
@@ -841,7 +843,7 @@ private fun HomeProductCard(product: Product, onTryOn: () -> Unit) {
                     contentPadding = PaddingValues(horizontal = 9.dp, vertical = 4.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(35.dp)
+                        .height(33.dp)
                         .tihinButtonPress(trySource)
                 ) {
                     Icon(
@@ -917,12 +919,12 @@ private fun BrandBanner() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 18.dp),
+                .padding(horizontal = 14.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(52.dp)
+                    .size(46.dp)
                     .background(SurfaceColor.copy(alpha = 0.78f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -938,7 +940,7 @@ private fun BrandBanner() {
                 Text(
                     text = "Fashion that fits your life.",
                     fontFamily = EditorialSerif,
-                    fontSize = 20.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = DeepForest
                 )

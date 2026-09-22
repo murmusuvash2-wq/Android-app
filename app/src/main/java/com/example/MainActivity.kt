@@ -14,6 +14,7 @@ import com.example.ui.AppNavigation
 import com.example.ui.AppPersistence
 import com.example.ui.Screen
 import com.example.ui.theme.MyApplicationTheme
+import com.example.update.TiHinUpdatePrompt
 
 class MainActivity : ComponentActivity() {
 
@@ -45,6 +46,7 @@ class MainActivity : ComponentActivity() {
 
             MyApplicationTheme {
                 AppNavigation(startDestination = startDest, navController = navController)
+                TiHinUpdatePrompt(currentVersionName = BuildConfig.VERSION_NAME)
             }
         }
     }

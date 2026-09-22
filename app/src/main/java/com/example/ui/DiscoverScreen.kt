@@ -154,6 +154,8 @@ fun DiscoverScreen(navController: NavController) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(DISCOVER_CATEGORIES.first()) }
     var showFilters by remember { mutableStateOf(false) }
+    var selectedPriceFilter by remember { mutableStateOf<String?>(null) }
+    var highScoreOnly by remember { mutableStateOf(false) }
     var showAccountPrompt by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
     var isError by remember { mutableStateOf(false) }
@@ -220,8 +222,17 @@ fun DiscoverScreen(navController: NavController) {
         }
     }
 
-    val displayProducts = remember(products, selectedCategory, searchQuery) {
-        filterProducts(products, searchQuery, selectedCategory)
+    val displayProducts = remember(products, selectedCategory, searchQuery, selectedPriceFilter, highScoreOnly) {
+        filterProducts(products, searchQuery, selectedCategory).filter { product ->
+            val priceMatches = when (selectedPriceFilter) {
+                "under1k" -> product.price < 1000.0
+                "1to2k" -> product.price in 1000.0..1999.0
+                "2kplus" -> product.price >= 2000.0
+                else -> true
+            }
+            val scoreMatches = !highScoreOnly || (tihinScore(product) ?: 0) >= 80
+            priceMatches && scoreMatches
+        }
     }
 
     if (showAccountPrompt) {
@@ -380,10 +391,27 @@ fun DiscoverScreen(navController: NavController) {
                                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("More filters", fontFamily = Inter, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, color = Charcoal)
-                                    Text("Price", fontFamily = Inter, fontSize = 11.sp, color = SecondaryText)
-                                    Text("Brand", fontFamily = Inter, fontSize = 11.sp, color = SecondaryText)
-                                    Text("Score", fontFamily = Inter, fontSize = 11.sp, color = SecondaryText)
+                                    Text("Price", fontFamily = Inter, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, color = Charcoal)
+                                    FilterChip(
+                                        selected = selectedPriceFilter == "under1k",
+                                        onClick = { selectedPriceFilter = if (selectedPriceFilter == "under1k") null else "under1k" },
+                                        label = { Text("< ₹1K", fontFamily = Inter, fontSize = 10.5.sp) }
+                                    )
+                                    FilterChip(
+                                        selected = selectedPriceFilter == "1to2k",
+                                        onClick = { selectedPriceFilter = if (selectedPriceFilter == "1to2k") null else "1to2k" },
+                                        label = { Text("₹1K–2K", fontFamily = Inter, fontSize = 10.5.sp) }
+                                    )
+                                    FilterChip(
+                                        selected = selectedPriceFilter == "2kplus",
+                                        onClick = { selectedPriceFilter = if (selectedPriceFilter == "2kplus") null else "2kplus" },
+                                        label = { Text("₹2K+", fontFamily = Inter, fontSize = 10.5.sp) }
+                                    )
+                                    FilterChip(
+                                        selected = highScoreOnly,
+                                        onClick = { highScoreOnly = !highScoreOnly },
+                                        label = { Text("TiHin 80+", fontFamily = Inter, fontSize = 10.5.sp) }
+                                    )
                                 }
                             }
                         }

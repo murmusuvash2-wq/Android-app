@@ -116,7 +116,6 @@ object TiHinStyleRepository {
 
                 if (productName.isNotBlank() || merchant.isNotBlank() || imageUrl.isNotBlank()) {
                     favouriteMetadata[productId] = FavouriteMetadata(
-                        id = productId,
                         title = productName,
                         brand = merchant,
                         price = price,

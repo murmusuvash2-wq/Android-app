@@ -6,6 +6,7 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -55,6 +57,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -62,6 +67,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import com.example.ui.theme.BorderColor
 import com.example.ui.theme.DeepForest
@@ -75,6 +81,9 @@ import com.example.ui.theme.SoftCharcoal
 import com.example.ui.theme.SurfaceColor
 import com.example.ui.theme.SurfaceVariantColor
 import com.example.ui.theme.WarmIvory
+import com.example.data.repository.ProductRepository
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -136,27 +145,46 @@ fun SplashScreen(navController: NavController) {
 data class OnboardingSlide(
     val title: String,
     val subtitle: String,
-    val icon: ImageVector
+    val eyebrow: String,
+    val icon: ImageVector,
+    val imageUrl: String?
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingScreen(navController: NavController) {
+    val context = LocalContext.current
+    val productRepo = remember { ProductRepository.get() }
+    var onboardingProducts by remember { mutableStateOf(emptyList<com.example.data.model.Product>()) }
+
+    LaunchedEffect(Unit) {
+        val cached = productRepo.getProducts()
+        if (cached.isNotEmpty()) onboardingProducts = cached
+        val result = productRepo.refreshCatalog()
+        if (result.isSuccess) onboardingProducts = productRepo.getProducts()
+    }
+
     val slides = listOf(
         OnboardingSlide(
             title = "Try",
-            subtitle = "See it on you before you buy with instant virtual fitting.",
-            icon = Icons.Default.Visibility
+            subtitle = "See it on you before you buy.",
+            eyebrow = "VIRTUAL FITTING",
+            icon = Icons.Default.Visibility,
+            imageUrl = onboardingProducts.getOrNull(0)?.primaryImageUrl
         ),
         OnboardingSlide(
             title = "Love",
-            subtitle = "Find your perfect look and curated styles with complete confidence.",
-            icon = Icons.Default.Favorite
+            subtitle = "Save the styles that feel like you.",
+            eyebrow = "YOUR WARDROBE",
+            icon = Icons.Default.Favorite,
+            imageUrl = onboardingProducts.getOrNull(1)?.primaryImageUrl
         ),
         OnboardingSlide(
             title = "Buy",
-            subtitle = "Shop your favourite outfits directly from verified merchant stores.",
-            icon = Icons.Default.ShoppingBag
+            subtitle = "Shop your favourite styles in just a tap.",
+            eyebrow = "SHOP WITH CONFIDENCE",
+            icon = Icons.Default.ShoppingBag,
+            imageUrl = onboardingProducts.getOrNull(2)?.primaryImageUrl
         )
     )
 
@@ -178,7 +206,7 @@ fun OnboardingScreen(navController: NavController) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 18.dp),
+                    .padding(horizontal = 24.dp, vertical = 14.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -216,36 +244,98 @@ fun OnboardingScreen(navController: NavController) {
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(132.dp)
-                            .clip(RoundedCornerShape(38.dp))
-                            .background(SurfaceVariantColor),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .height(300.dp)
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(SurfaceVariantColor)
                     ) {
-                        Icon(
-                            imageVector = slide.icon,
-                            contentDescription = null,
-                            tint = DeepForest,
-                            modifier = Modifier.size(44.dp)
-                        )
+                        if (!slide.imageUrl.isNullOrBlank()) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(slide.imageUrl)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.verticalGradient(
+                                            listOf(
+                                                Color.Transparent,
+                                                Color.Black.copy(alpha = 0.62f)
+                                            )
+                                        )
+                                    )
+                            )
+                        }
+
+                        Surface(
+                            color = if (!slide.imageUrl.isNullOrBlank()) Color.Black.copy(alpha = 0.42f) else DeepForestContainer,
+                            shape = RoundedCornerShape(18.dp),
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(14.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = slide.icon,
+                                    contentDescription = null,
+                                    tint = if (!slide.imageUrl.isNullOrBlank()) Color.White else DeepForest,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = slide.eyebrow,
+                                    fontFamily = Inter,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 1.1.sp,
+                                    color = if (!slide.imageUrl.isNullOrBlank()) Color.White else DeepForest
+                                )
+                            }
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(18.dp)
+                        ) {
+                            Text(
+                                text = slide.title.uppercase(),
+                                fontFamily = EditorialSerif,
+                                fontSize = 42.sp,
+                                lineHeight = 42.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+
+                        if (slide.imageUrl.isNullOrBlank()) {
+                            Icon(
+                                imageVector = slide.icon,
+                                contentDescription = null,
+                                tint = DeepForest.copy(alpha = 0.16f),
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .size(92.dp)
+                            )
+                        }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Text(
-                        text = slide.title,
-                        fontFamily = EditorialSerif,
-                        fontSize = 34.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PrimaryText,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
 
                     Text(
                         text = slide.subtitle,
                         fontFamily = Inter,
                         fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
                         color = SecondaryText,
                         textAlign = TextAlign.Center,
                         lineHeight = 20.sp
@@ -256,7 +346,7 @@ fun OnboardingScreen(navController: NavController) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
+                    .padding(bottom = 12.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -275,7 +365,7 @@ fun OnboardingScreen(navController: NavController) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 12.dp)
+                    .padding(horizontal = 24.dp, vertical = 10.dp)
             ) {
                 if (pagerState.currentPage == slides.size - 1) {
                     Button(
@@ -397,7 +487,16 @@ fun AuthBottomSheetContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = if (isSignUp) "Join a more confident way to shop fashion." else "Try it on. Save what you love. Shop when you’re ready.",
+            fontFamily = Inter,
+            fontSize = 12.5.sp,
+            lineHeight = 18.sp,
+            color = SecondaryText,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
 
         Button(
             onClick = {

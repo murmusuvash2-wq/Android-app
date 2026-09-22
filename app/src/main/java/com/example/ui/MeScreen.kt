@@ -147,15 +147,24 @@ fun MeScreen(
             .testTag("me_screen")
     ) {
         // Top Header
-        Text(
-            text = "Profile",
-            fontFamily = EditorialSerif,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = Charcoal,
-            letterSpacing = (-0.5).sp,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
-        )
+        Column(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+        ) {
+            Text(
+                text = "Profile",
+                fontFamily = EditorialSerif,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Bold,
+                color = Charcoal,
+                letterSpacing = (-0.5).sp
+            )
+            Text(
+                text = "Your style, in one place.",
+                fontFamily = Inter,
+                fontSize = 11.5.sp,
+                color = SoftCharcoal
+            )
+        }
 
         // ==========================================
         // 1. PROFILE SECTION
@@ -165,20 +174,20 @@ fun MeScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = SurfaceColor),
+            colors = CardDefaults.cardColors(containerColor = DeepForestContainer),
             border = BorderStroke(1.dp, CardBorder),
             elevation = CardDefaults.cardElevation(defaultElevation = SubtleCardElevation)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(14.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(56.dp)
+                            .size(54.dp)
                             .clip(CircleShape)
-                            .background(DeepForestContainer),
+                            .background(SurfaceColor),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(

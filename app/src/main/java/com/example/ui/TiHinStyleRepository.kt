@@ -31,7 +31,14 @@ object TiHinStyleRepository {
     val favouriteProductIds = mutableStateListOf<String>()
     val priceTrackedProductIds = mutableStateListOf<String>()
     val savedLooks = mutableStateListOf<SavedLook>()
-    private val favouriteMetadata = mutableStateMapOf<String, TrendingLook>()
+    private val favouriteMetadata = mutableStateMapOf<String, FavouriteMetadata>()
+
+    private data class FavouriteMetadata(
+        val title: String,
+        val brand: String,
+        val price: Double,
+        val imageUrl: String
+    )
 
     private var database: AppDatabase? = null
     private val scope = CoroutineScope(Dispatchers.Main)
@@ -108,7 +115,7 @@ object TiHinStyleRepository {
                 }
 
                 if (productName.isNotBlank() || merchant.isNotBlank() || imageUrl.isNotBlank()) {
-                    favouriteMetadata[productId] = TrendingLook(
+                    favouriteMetadata[productId] = FavouriteMetadata(
                         id = productId,
                         title = productName,
                         brand = merchant,

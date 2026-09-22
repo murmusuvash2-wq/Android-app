@@ -109,10 +109,10 @@ fun HomeScreen(
             .background(WarmIvory)
             .verticalScroll(scrollState)
             .padding(horizontal = 16.dp)
-            .padding(top = 14.dp, bottom = 24.dp)
+            .padding(top = 12.dp, bottom = 20.dp)
     ) {
         HomeHeader(navController)
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
 
         HeroTryOnCard(
             product = heroProduct,
@@ -158,7 +158,7 @@ fun HomeScreen(
             )
         }
 
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(14.dp))
 
         HomeSectionHeader(
             title = "Explore styles",
@@ -166,10 +166,10 @@ fun HomeScreen(
             action = "Discover",
             onAction = onNavigateToDiscover
         )
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
         CategoryRow(products = products, onDiscover = onNavigateToDiscover)
 
-        Spacer(Modifier.height(22.dp))
+        Spacer(Modifier.height(16.dp))
 
         HomeSectionHeader(
             title = "Trending Now",
@@ -177,7 +177,7 @@ fun HomeScreen(
             action = "See all",
             onAction = onNavigateToDiscover
         )
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
         TrendingEditorial(
             products = trendingProducts.take(3),
             onTryOn = { product ->
@@ -187,7 +187,7 @@ fun HomeScreen(
             onDiscover = onNavigateToDiscover
         )
 
-        Spacer(Modifier.height(22.dp))
+        Spacer(Modifier.height(16.dp))
 
         HomeSectionHeader(
             title = "Most Loved",
@@ -195,7 +195,7 @@ fun HomeScreen(
             action = "See all",
             onAction = onNavigateToDiscover
         )
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -212,7 +212,7 @@ fun HomeScreen(
             }
         }
 
-        Spacer(Modifier.height(22.dp))
+        Spacer(Modifier.height(16.dp))
         BrandBanner()
         Spacer(Modifier.height(8.dp))
     }
@@ -242,7 +242,7 @@ private fun HomeHeader(navController: NavController) {
         Column {
             TiHinLogo(textSize = 27.sp, showSparkle = true)
             Text(
-                text = "Try • Love • Wear",
+                text = "Try. Love. Buy.",
                 fontFamily = Inter,
                 fontSize = 11.sp,
                 color = SoftCharcoal,
@@ -300,8 +300,8 @@ private fun HeroTryOnCard(product: Product?, onTryOn: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-             .height(230.dp)
-            .clip(RoundedCornerShape(22.dp))
+             .height(210.dp)
+            .clip(RoundedCornerShape(20.dp))
             .background(SurfaceVariantColor)
     ) {
         if (product != null && product.primaryImageUrl.isNotBlank()) {
@@ -338,8 +338,8 @@ private fun HeroTryOnCard(product: Product?, onTryOn: () -> Unit) {
             Text(
                 text = "YOUR STYLE,",
                 fontFamily = EditorialSerif,
-                fontSize = 26.sp,
-                lineHeight = 28.sp,
+                fontSize = 24.sp,
+                lineHeight = 26.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
@@ -351,7 +351,7 @@ private fun HeroTryOnCard(product: Product?, onTryOn: () -> Unit) {
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
                 text = "Try on real outfits before you buy.",
                 fontFamily = Inter,
@@ -359,7 +359,7 @@ private fun HeroTryOnCard(product: Product?, onTryOn: () -> Unit) {
                 lineHeight = 17.sp,
                 color = Color.White.copy(alpha = 0.92f)
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(8.dp))
             Button(
                 onClick = onTryOn,
                 interactionSource = source,
@@ -422,7 +422,7 @@ private fun HomePhotoAction(
         border = if (primary) null else BorderStroke(1.dp, CardBorder),
         shadowElevation = if (primary) 1.dp else 0.dp,
         modifier = modifier
-            .height(62.dp)
+            .height(58.dp)
             .tihinButtonPress(source)
     ) {
         Row(
@@ -540,7 +540,7 @@ private fun CategoryChip(label: String, imageUrl: String?, onClick: () -> Unit) 
                 )
             }
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(5.dp))
         Text(
             text = label,
             fontFamily = Inter,
@@ -944,7 +944,7 @@ private fun BrandBanner() {
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = "Try. Love. Wear. TiHin.",
+                    text = "Try. Love. Buy. TiHin.",
                     fontFamily = Inter,
                     fontSize = 11.5.sp,
                     color = DeepForest.copy(alpha = 0.78f)

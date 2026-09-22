@@ -11,8 +11,8 @@ import java.util.concurrent.TimeUnit
 
 object SupabaseConfig {
 
-    private const val FALLBACK_SUPABASE_URL = "eopcqvnqkkfwkviymkue.supabase.co"
-    private const val FALLBACK_ANON_KEY = "sb_publishable_eopcqvnqkkfwkviymkue_placeholder"
+    private const val FALLBACK_SUPABASE_URL = "eopcqvnqkkfwkvikvize.supabase.co"
+    private const val FALLBACK_ANON_KEY = "sb_publishable_nturu7r7B_0e9XicIsHn_w_6Ul6i86v"
 
     val supabaseUrl: String
         get() {
@@ -35,7 +35,7 @@ object SupabaseConfig {
             return if (configured.isNotBlank() && configured != "placeholder") {
                 configured
             } else {
-                // If not set in BuildConfig, fallback to system environment or default
+                // If not set in BuildConfig, use the public Supabase publishable key bundled for the client.
                 System.getenv("SUPABASE_ANON_KEY") ?: FALLBACK_ANON_KEY
             }
         }

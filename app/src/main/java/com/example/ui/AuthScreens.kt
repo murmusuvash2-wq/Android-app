@@ -111,32 +111,13 @@ fun SplashScreen(navController: NavController) {
             verticalArrangement = Arrangement.Center
         ) {
             Box(
-                modifier = Modifier
-                    .size(92.dp)
-                    .scale(scale.value)
-                    .clip(RoundedCornerShape(26.dp))
-                    .background(DeepForest),
-                contentAlignment = Alignment.Center
+                modifier = Modifier.scale(scale.value)
             ) {
-                Text(
-                    text = "T",
-                    fontFamily = EditorialSerif,
-                    fontSize = 48.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = SurfaceColor
+                TiHinLogo(
+                    textSize = 42.sp,
+                    showSparkle = true
                 )
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "TiHin",
-                fontFamily = EditorialSerif,
-                fontSize = 34.sp,
-                fontWeight = FontWeight.Bold,
-                color = PrimaryText,
-                letterSpacing = (-0.5).sp
-            )
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -201,12 +182,9 @@ fun OnboardingScreen(navController: NavController) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "TiHin",
-                    fontFamily = EditorialSerif,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = PrimaryText
+                TiHinLogo(
+                    textSize = 22.sp,
+                    showSparkle = true
                 )
 
                 TextButton(

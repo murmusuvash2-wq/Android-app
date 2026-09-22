@@ -25,6 +25,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items as lazyRowItems
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
@@ -92,6 +93,22 @@ typealias DiscoverProduct = Product
  */
 val MOCK_DISCOVER_PRODUCTS: List<Product>
     get() = MockProductDataSource.getProducts()
+
+enum class DiscoverTab(val title: String) {
+    TRENDING("Trending Now"),
+    MOST_LOVED("Most Loved"),
+    BEST_SELLERS("Best Sellers"),
+    JUST_IN("Just In")
+}
+
+fun getProductsForTab(products: List<Product>, tab: DiscoverTab): List<Product> {
+    return when (tab) {
+        DiscoverTab.TRENDING -> products
+        DiscoverTab.MOST_LOVED -> products.sortedWith(compareByDescending<Product> { it.isFavourite }.thenByDescending { it.reviewCount ?: 0 })
+        DiscoverTab.BEST_SELLERS -> products.sortedByDescending { it.reviewCount ?: 0 }
+        DiscoverTab.JUST_IN -> products.reversed()
+    }
+}
 
 private data class DiscoverCategory(val label: String, val keywords: List<String>?)
 
@@ -305,7 +322,7 @@ fun DiscoverScreen(navController: NavController) {
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             contentPadding = PaddingValues(top = 10.dp, bottom = 8.dp)
                         ) {
-                            items(DISCOVER_CATEGORIES) { category ->
+                            lazyRowItems(DISCOVER_CATEGORIES) { category ->
                                 val selected = selectedCategory.label == category.label
                                 Surface(
                                     onClick = { selectedCategory = category },

@@ -478,10 +478,11 @@ private fun HomePhotoAction(
 private fun CategoryRow(products: List<Product>, onDiscover: () -> Unit) {
     val categories = listOf(
         "New In" to null,
-        "Dresses" to listOf("dress", "gown", "kurta", "saree"),
+        "Women" to listOf("women", "woman", "female"),
+        "Men" to listOf("men", "man", "male"),
         "Tops" to listOf("top", "shirt", "t-shirt", "tee", "blouse"),
         "Bottoms" to listOf("jean", "trouser", "pant", "skirt", "short"),
-        "Outerwear" to listOf("jacket", "coat", "blazer", "cardigan"),
+        "Dresses" to listOf("dress", "gown"),
         "Ethnic" to listOf("kurta", "kurti", "saree", "ethnic", "lehenga")
     )
 

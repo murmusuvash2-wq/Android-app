@@ -109,10 +109,10 @@ fun HomeScreen(
             .background(WarmIvory)
             .verticalScroll(scrollState)
             .padding(horizontal = 16.dp)
-            .padding(top = 18.dp, bottom = 28.dp)
+            .padding(top = 14.dp, bottom = 24.dp)
     ) {
         HomeHeader(navController)
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(10.dp))
 
         HeroTryOnCard(
             product = heroProduct,
@@ -124,7 +124,7 @@ fun HomeScreen(
             }
         )
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(10.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -133,7 +133,7 @@ fun HomeScreen(
             HomePhotoAction(
                 title = "Take Photo",
                 subtitle = "Use your camera",
-                icon = { Icon(Icons.Default.CameraAlt, null, Modifier.size(21.dp)) },
+                icon = { Icon(Icons.Default.CameraAlt, null, Modifier.size(18.dp)) },
                 modifier = Modifier.weight(1f),
                 primary = true,
                 onClick = {
@@ -147,7 +147,7 @@ fun HomeScreen(
             HomePhotoAction(
                 title = "Choose Photo",
                 subtitle = "From your gallery",
-                icon = { Icon(Icons.Default.PhotoLibrary, null, Modifier.size(21.dp)) },
+                icon = { Icon(Icons.Default.PhotoLibrary, null, Modifier.size(18.dp)) },
                 modifier = Modifier.weight(1f),
                 primary = false,
                 onClick = {
@@ -158,7 +158,7 @@ fun HomeScreen(
             )
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(18.dp))
 
         HomeSectionHeader(
             title = "Explore styles",
@@ -166,10 +166,10 @@ fun HomeScreen(
             action = "Discover",
             onAction = onNavigateToDiscover
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(10.dp))
         CategoryRow(products = products, onDiscover = onNavigateToDiscover)
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(22.dp))
 
         HomeSectionHeader(
             title = "Trending Now",
@@ -177,7 +177,7 @@ fun HomeScreen(
             action = "See all",
             onAction = onNavigateToDiscover
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(10.dp))
         TrendingEditorial(
             products = trendingProducts.take(3),
             onTryOn = { product ->
@@ -187,7 +187,7 @@ fun HomeScreen(
             onDiscover = onNavigateToDiscover
         )
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(22.dp))
 
         HomeSectionHeader(
             title = "Most Loved",
@@ -195,7 +195,7 @@ fun HomeScreen(
             action = "See all",
             onAction = onNavigateToDiscover
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(10.dp))
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -212,7 +212,7 @@ fun HomeScreen(
             }
         }
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(22.dp))
         BrandBanner()
         Spacer(Modifier.height(8.dp))
     }
@@ -240,7 +240,7 @@ private fun HomeHeader(navController: NavController) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Column {
-            TiHinLogo(textSize = 30.sp, showSparkle = true)
+            TiHinLogo(textSize = 27.sp, showSparkle = true)
             Text(
                 text = "Try • Love • Wear",
                 fontFamily = Inter,
@@ -269,7 +269,7 @@ private fun HomeHeader(navController: NavController) {
                 color = SurfaceColor,
                 border = BorderStroke(1.dp, CardBorder),
                 modifier = Modifier
-                    .size(42.dp)
+                     .size(38.dp)
                     .tihinButtonPress(source, pressedScale = 0.92f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -277,7 +277,7 @@ private fun HomeHeader(navController: NavController) {
                         Icons.Default.NotificationsNone,
                         contentDescription = "Notifications",
                         tint = Charcoal,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                     Box(
                         modifier = Modifier
@@ -300,8 +300,8 @@ private fun HeroTryOnCard(product: Product?, onTryOn: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(270.dp)
-            .clip(RoundedCornerShape(26.dp))
+             .height(230.dp)
+            .clip(RoundedCornerShape(22.dp))
             .background(SurfaceVariantColor)
     ) {
         if (product != null && product.primaryImageUrl.isNotBlank()) {
@@ -333,21 +333,21 @@ private fun HeroTryOnCard(product: Product?, onTryOn: () -> Unit) {
         Column(
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .padding(start = 20.dp, end = 150.dp)
+                .padding(start = 18.dp, end = 128.dp)
         ) {
             Text(
                 text = "YOUR STYLE,",
                 fontFamily = EditorialSerif,
-                fontSize = 31.sp,
-                lineHeight = 33.sp,
+                fontSize = 26.sp,
+                lineHeight = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
             Text(
                 text = "YOURSELF",
                 fontFamily = EditorialSerif,
-                fontSize = 31.sp,
-                lineHeight = 33.sp,
+                fontSize = 26.sp,
+                lineHeight = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
@@ -355,11 +355,11 @@ private fun HeroTryOnCard(product: Product?, onTryOn: () -> Unit) {
             Text(
                 text = "Try on real outfits before you buy.",
                 fontFamily = Inter,
-                fontSize = 13.sp,
-                lineHeight = 18.sp,
+                fontSize = 12.sp,
+                lineHeight = 17.sp,
                 color = Color.White.copy(alpha = 0.92f)
             )
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(10.dp))
             Button(
                 onClick = onTryOn,
                 interactionSource = source,
@@ -368,13 +368,13 @@ private fun HeroTryOnCard(product: Product?, onTryOn: () -> Unit) {
                     contentColor = DeepForest
                 ),
                 shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-                modifier = Modifier.tihinButtonPress(source)
+                contentPadding = PaddingValues(horizontal = 13.dp, vertical = 7.dp),
+                modifier = Modifier.tihinButtonPress(source).height(38.dp)
             ) {
                 Text(
                     text = "Try On Now",
                     fontFamily = Inter,
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(Modifier.width(5.dp))
@@ -422,7 +422,7 @@ private fun HomePhotoAction(
         border = if (primary) null else BorderStroke(1.dp, CardBorder),
         shadowElevation = if (primary) 1.dp else 0.dp,
         modifier = modifier
-            .height(76.dp)
+            .height(62.dp)
             .tihinButtonPress(source)
     ) {
         Row(
@@ -431,7 +431,7 @@ private fun HomePhotoAction(
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                     .size(34.dp)
                     .background(
                         if (primary) Color.White.copy(alpha = 0.14f) else DeepForestContainer,
                         CircleShape
@@ -449,7 +449,7 @@ private fun HomePhotoAction(
                 Text(
                     title,
                     fontFamily = Inter,
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (primary) Color.White else Charcoal,
                     maxLines = 1,
@@ -458,7 +458,7 @@ private fun HomePhotoAction(
                 Text(
                     subtitle,
                     fontFamily = Inter,
-                    fontSize = 10.5.sp,
+                    fontSize = 9.5.sp,
                     color = if (primary) Color.White.copy(alpha = 0.78f) else SoftCharcoal,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -468,7 +468,7 @@ private fun HomePhotoAction(
                 Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
                 tint = if (primary) Color.White else DeepForest,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(14.dp)
             )
         }
     }
@@ -510,12 +510,12 @@ private fun CategoryChip(label: String, imageUrl: String?, onClick: () -> Unit) 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .width(70.dp)
+             .width(64.dp)
             .clickable(onClick = onClick)
     ) {
         Box(
             modifier = Modifier
-                .size(62.dp)
+                 .size(54.dp)
                 .clip(CircleShape)
                 .background(SurfaceColor)
                 .border(1.dp, CardBorder, CircleShape)
@@ -535,7 +535,7 @@ private fun CategoryChip(label: String, imageUrl: String?, onClick: () -> Unit) 
                     Icons.Default.Tune,
                     contentDescription = label,
                     tint = DeepForest,
-                    modifier = Modifier.align(Alignment.Center).size(24.dp)
+                    modifier = Modifier.align(Alignment.Center) .size(20.dp)
                 )
             }
         }
@@ -543,7 +543,7 @@ private fun CategoryChip(label: String, imageUrl: String?, onClick: () -> Unit) 
         Text(
             text = label,
             fontFamily = Inter,
-            fontSize = 10.5.sp,
+            fontSize = 9.5.sp,
             fontWeight = FontWeight.SemiBold,
             color = Charcoal,
             maxLines = 1,
@@ -569,12 +569,12 @@ private fun TrendingEditorial(
     ) {
         EditorialFeatureCard(
             product = feature,
-            modifier = Modifier.weight(1.08f).height(292.dp),
+            modifier = Modifier.weight(1.08f).height(250.dp),
             onTryOn = { onTryOn(feature) }
         )
 
         Column(
-            modifier = Modifier.weight(0.92f).height(292.dp),
+            modifier = Modifier.weight(0.92f).height(250.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             sideProducts.forEach { product ->
@@ -639,8 +639,8 @@ private fun EditorialFeatureCard(
             Text(
                 text = product.name,
                 fontFamily = EditorialSerif,
-                fontSize = 22.sp,
-                lineHeight = 24.sp,
+                fontSize = 20.sp,
+                lineHeight = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 maxLines = 2,
@@ -755,7 +755,7 @@ private fun HomeProductCard(product: Product, onTryOn: () -> Unit) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(190.dp)
+                     .height(170.dp)
                     .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
                     .background(SurfaceVariantColor)
             ) {
@@ -816,7 +816,7 @@ private fun HomeProductCard(product: Product, onTryOn: () -> Unit) {
                 Text(
                     text = product.name,
                     fontFamily = Inter,
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color = Charcoal,
                     maxLines = 1,
@@ -879,7 +879,7 @@ private fun HomeSectionHeader(
             Text(
                 text = title,
                 fontFamily = EditorialSerif,
-                fontSize = 22.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = Charcoal,
                 letterSpacing = (-0.3).sp
@@ -928,7 +928,7 @@ private fun BrandBanner() {
                 Text(
                     text = "✦",
                     fontFamily = EditorialSerif,
-                    fontSize = 22.sp,
+                    fontSize = 20.sp,
                     color = ChampagneGold
                 )
             }

@@ -200,24 +200,10 @@ fun HomeScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "TiHin",
-                        fontFamily = EditorialSerif,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 32.sp,
-                        color = Charcoal,
-                        letterSpacing = (-0.5).sp
-                    )
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = null,
-                        tint = DeepForest,
-                        modifier = Modifier
-                            .size(15.dp)
-                            .offset(x = 3.dp, y = (-6).dp)
-                    )
-                }
+                TiHinLogo(
+                    textSize = 30.sp,
+                    showSparkle = true
+                )
                 Text(
                     text = stringResource(R.string.tagline),
                     fontFamily = Inter,

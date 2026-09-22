@@ -25,7 +25,10 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          accept-android-sdk-licenses: true
+          cmdline-tools-version: 12266719
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses >/dev/null
 
       - name: Generate temporary debug keystore
         run: |

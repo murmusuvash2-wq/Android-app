@@ -874,7 +874,13 @@ fun DiscoverEditorialCard(
                 modifier = Modifier.padding(8.dp).minimumInteractiveComponentSize().size(34.dp).align(Alignment.TopEnd)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    TiHinAnimatedHeartIcon(product.isFavourite, if (product.isFavourite) "Remove from favourites" else "Save product", DeepForest, PrimaryText, 17.dp)
+                    TiHinAnimatedHeartIcon(
+                        isFavourite = product.isFavourite,
+                        contentDescription = if (product.isFavourite) "Remove from favourites" else "Save product",
+                        activeTint = DeepForest,
+                        inactiveTint = PrimaryText,
+                        iconSize = 17.dp
+                    )
                 }
             }
         }
@@ -974,7 +980,13 @@ fun PeekRevealCard(
                             modifier = Modifier.minimumInteractiveComponentSize().size(38.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                TiHinAnimatedHeartIcon(product.isFavourite, if (product.isFavourite) "Remove from favourites" else "Save product", DeepForest, PrimaryText, 18.dp)
+                                TiHinAnimatedHeartIcon(
+                                isFavourite = product.isFavourite,
+                                contentDescription = if (product.isFavourite) "Remove from favourites" else "Save product",
+                                activeTint = DeepForest,
+                                inactiveTint = PrimaryText,
+                                iconSize = 18.dp
+                            )
                             }
                         }
                     }

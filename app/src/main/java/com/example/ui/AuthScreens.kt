@@ -216,8 +216,8 @@ fun OnboardingScreen(navController: NavController) {
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(112.dp)
-                            .clip(CircleShape)
+                            .size(132.dp)
+                            .clip(RoundedCornerShape(38.dp))
                             .background(SurfaceVariantColor),
                         contentAlignment = Alignment.Center
                     ) {
@@ -225,30 +225,30 @@ fun OnboardingScreen(navController: NavController) {
                             imageVector = slide.icon,
                             contentDescription = null,
                             tint = DeepForest,
-                            modifier = Modifier.size(48.dp)
+                            modifier = Modifier.size(44.dp)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
                         text = slide.title,
                         fontFamily = EditorialSerif,
-                        fontSize = 32.sp,
+                        fontSize = 34.sp,
                         fontWeight = FontWeight.Bold,
                         color = PrimaryText,
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
                         text = slide.subtitle,
                         fontFamily = Inter,
-                        fontSize = 15.sp,
+                        fontSize = 14.sp,
                         color = SecondaryText,
                         textAlign = TextAlign.Center,
-                        lineHeight = 22.sp
+                        lineHeight = 20.sp
                     )
                 }
             }
@@ -256,7 +256,7 @@ fun OnboardingScreen(navController: NavController) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp),
+                    .padding(bottom = 16.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -275,14 +275,14 @@ fun OnboardingScreen(navController: NavController) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .padding(horizontal = 24.dp, vertical = 12.dp)
             ) {
                 if (pagerState.currentPage == slides.size - 1) {
                     Button(
                         onClick = { showAuthSheet = true },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp)
+                            .height(48.dp)
                             .testTag("onboarding_get_started_button"),
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -308,7 +308,7 @@ fun OnboardingScreen(navController: NavController) {
                                 }
                             },
                             modifier = Modifier
-                                .height(52.dp)
+                                .height(46.dp)
                                 .testTag("onboarding_next_button"),
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
@@ -339,7 +339,15 @@ fun OnboardingScreen(navController: NavController) {
                 onDismissRequest = { showAuthSheet = false },
                 sheetState = sheetState,
                 containerColor = SurfaceColor,
-                dragHandle = null
+                dragHandle = {
+                    Box(
+                        modifier = Modifier
+                            .padding(top = 10.dp)
+                            .size(width = 36.dp, height = 4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(BorderColor)
+                    )
+                }
             ) {
                 AuthBottomSheetContent(
                     onDismiss = { showAuthSheet = false },
@@ -367,7 +375,7 @@ fun AuthBottomSheetContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(24.dp)
+            .padding(horizontal = 24.dp, vertical = 18.dp)
             .navigationBarsPadding()
             .testTag("auth_bottom_sheet"),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -379,7 +387,8 @@ fun AuthBottomSheetContent(
         ) {
             Text(
                 text = if (isSignUp) "Create Account" else "Welcome to TiHin",
-                fontSize = 20.sp,
+                fontFamily = EditorialSerif,
+                fontSize = 23.sp,
                 fontWeight = FontWeight.Bold,
                 color = PrimaryText
             )
@@ -388,7 +397,7 @@ fun AuthBottomSheetContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         Button(
             onClick = {
@@ -397,7 +406,7 @@ fun AuthBottomSheetContent(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp)
+                .height(48.dp)
                 .testTag("auth_google_button"),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
@@ -408,7 +417,7 @@ fun AuthBottomSheetContent(
             Text("Continue with Google", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -434,7 +443,7 @@ fun AuthBottomSheetContent(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             value = email,
@@ -447,7 +456,7 @@ fun AuthBottomSheetContent(
             singleLine = true
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedTextField(
             value = password,
@@ -461,7 +470,7 @@ fun AuthBottomSheetContent(
             singleLine = true
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Button(
             onClick = {

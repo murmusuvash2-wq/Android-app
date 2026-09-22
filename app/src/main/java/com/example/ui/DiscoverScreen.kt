@@ -269,7 +269,7 @@ fun DiscoverScreen(navController: NavController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundColor)
+             .background(WarmIvory)
     ) {
         // 2-Column Editorial Grid
         LazyVerticalStaggeredGrid(
@@ -283,11 +283,11 @@ fun DiscoverScreen(navController: NavController) {
                     // 1. COMPACT DISCOVER HEADER
                     item(span = StaggeredGridItemSpan.FullLine) {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 10.dp),
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Discover", fontFamily = EditorialSerif, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Charcoal)
+                            Text("Discover", fontFamily = EditorialSerif, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Charcoal)
                             if (!SessionManager.isGuest) {
                                 Surface(
                                     onClick = { navController.navigate(Screen.TriesCredits.route) },
@@ -310,7 +310,7 @@ fun DiscoverScreen(navController: NavController) {
                         OutlinedTextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
-                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
                             placeholder = { Text("Search clothes, brands...", color = SecondaryText, fontSize = 13.sp) },
                             leadingIcon = { Icon(Icons.Default.Search, "Search", tint = SecondaryText, modifier = Modifier.size(19.dp)) },
                             shape = RoundedCornerShape(14.dp),
@@ -331,7 +331,7 @@ fun DiscoverScreen(navController: NavController) {
                         LazyRow(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            contentPadding = PaddingValues(top = 10.dp, bottom = 8.dp)
+                            contentPadding = PaddingValues(top = 8.dp, bottom = 6.dp)
                         ) {
                             lazyRowItems(DISCOVER_CATEGORIES) { category ->
                                 val selected = selectedCategory.label == category.label
@@ -340,7 +340,7 @@ fun DiscoverScreen(navController: NavController) {
                                     shape = RoundedCornerShape(18.dp),
                                     color = if (selected) DeepForest else SurfaceColor,
                                     border = if (selected) null else BorderStroke(1.dp, CardBorder),
-                                    modifier = Modifier.height(34.dp)
+                                    modifier = Modifier.height(32.dp)
                                 ) {
                                     Box(Modifier.padding(horizontal = 13.dp), contentAlignment = Alignment.Center) {
                                         Text(category.label, fontFamily = Inter, fontSize = 11.5.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium, color = if (selected) Color.White else Charcoal)

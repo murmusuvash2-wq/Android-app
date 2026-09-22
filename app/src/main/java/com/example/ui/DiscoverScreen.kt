@@ -425,6 +425,18 @@ fun DiscoverScreen(navController: NavController) {
                                     TryOnManager.selectedProductImage = product.imageUrl
                                     navController.navigate(Screen.TryOn.route)
                                 },
+                                onBuy = {
+                                    val url = product.merchantUrl
+                                    if (!url.isNullOrBlank()) {
+                                        try {
+                                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                        } catch (e: Exception) {
+                                            scope.launch { snackbarHostState.showSnackbar("Could not open the store link.") }
+                                        }
+                                    } else {
+                                        scope.launch { snackbarHostState.showSnackbar("This product link isn't available yet.") }
+                                    }
+                                },
                                 onToggleFavourite = {
                                     if (SessionManager.isGuest) {
                                         showAccountPrompt = true
@@ -866,6 +878,7 @@ fun DiscoverEditorialCard(
     product: DiscoverProduct,
     onCardClick: () -> Unit,
     onTryOn: () -> Unit,
+    onBuy: () -> Unit,
     onToggleFavourite: () -> Unit
 ) {
     val formatter = remember { NumberFormat.getCurrencyInstance(Locale("en", "IN")).apply { maximumFractionDigits = 0 } }
@@ -908,18 +921,35 @@ fun DiscoverEditorialCard(
             if (score != null) Text("TiHin $score", fontFamily = Inter, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = DeepForest)
         }
         Spacer(Modifier.height(6.dp))
-        val interaction = remember { MutableInteractionSource() }
-        Button(
-            onClick = onTryOn,
-            interactionSource = interaction,
-            colors = ButtonDefaults.buttonColors(containerColor = DeepForest, contentColor = Color.White),
-            shape = RoundedCornerShape(9.dp),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-            modifier = Modifier.fillMaxWidth().height(34.dp).tihinButtonPress(interaction)
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.AutoAwesome, null, modifier = Modifier.size(12.dp))
-            Spacer(Modifier.width(4.dp))
-            Text("Try On", fontFamily = Inter, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            val interaction = remember { MutableInteractionSource() }
+            Button(
+                onClick = onTryOn,
+                interactionSource = interaction,
+                colors = ButtonDefaults.buttonColors(containerColor = DeepForest, contentColor = Color.White),
+                shape = RoundedCornerShape(9.dp),
+                contentPadding = PaddingValues(horizontal = 7.dp, vertical = 4.dp),
+                modifier = Modifier.height(34.dp).weight(0.52f).tihinButtonPress(interaction)
+            ) {
+                Icon(Icons.Default.AutoAwesome, null, modifier = Modifier.size(12.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("Try On", fontFamily = Inter, fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold)
+            }
+            if (!product.merchantUrl.isNullOrBlank()) {
+                OutlinedButton(
+                    onClick = onBuy,
+                    shape = RoundedCornerShape(9.dp),
+                    border = BorderStroke(1.dp, CardBorder),
+                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
+                    modifier = Modifier.height(34.dp).weight(0.48f)
+                ) {
+                    Text("Buy on " + product.merchant, fontFamily = Inter, fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
         }
     }
 }

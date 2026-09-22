@@ -31,17 +31,25 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses >/dev/null
 
-      - name: Generate temporary debug keystore
+      - name: Restore stable CI debug keystore
+        uses: actions/cache@v4
+        with:
+          path: debug.keystore
+          key: tihin-debug-keystore-v1
+
+      - name: Generate stable CI debug keystore when missing
         run: |
-          keytool -genkeypair \
-            -alias androiddebugkey \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -keystore debug.keystore \
-            -storepass android \
-            -keypass android \
-            -dname "CN=Android Debug,O=Android,C=US"
+          if [ ! -f debug.keystore ]; then
+            keytool -genkeypair \
+              -alias androiddebugkey \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -keystore debug.keystore \
+              -storepass android \
+              -keypass android \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4

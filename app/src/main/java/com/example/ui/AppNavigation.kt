@@ -207,7 +207,7 @@ fun AppShell(
         containerColor = WarmIvory,
         bottomBar = {
             NavigationBar(
-                containerColor = SurfaceColor,
+                containerColor = WarmIvory,
                 tonalElevation = 0.dp,
                 modifier = Modifier
                     .testTag("app_bottom_bar")
@@ -246,7 +246,8 @@ fun AppShell(
                         label = {
                             Text(
                                 text = tab.title,
-                                fontSize = 11.sp,
+                                fontSize = 10.sp,
+                                lineHeight = 12.sp,
                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium
                             )
                         },
@@ -257,7 +258,9 @@ fun AppShell(
                             unselectedTextColor = SecondaryText,
                             indicatorColor = DeepForest.copy(alpha = 0.08f)
                         ),
-                        modifier = Modifier.testTag(tab.testTag)
+                        modifier = Modifier
+                            .testTag(tab.testTag)
+                            .height(60.dp)
                     )
                 }
             }

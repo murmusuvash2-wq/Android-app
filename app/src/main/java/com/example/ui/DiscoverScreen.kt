@@ -24,6 +24,7 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
@@ -41,6 +42,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Refresh
@@ -78,6 +80,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /**
  * Backward-compatible typealias pointing to the canonical Product domain model.
@@ -90,59 +93,50 @@ typealias DiscoverProduct = Product
 val MOCK_DISCOVER_PRODUCTS: List<Product>
     get() = MockProductDataSource.getProducts()
 
-enum class DiscoverTab(val title: String) {
-    TRENDING("Trending Now"),
-    MOST_LOVED("Most Loved"),
-    BEST_SELLERS("Best Sellers"),
-    JUST_IN("Just In")
-}
+private data class DiscoverCategory(val label: String, val keywords: List<String>?)
 
-/**
- * Pure, deterministic function to filter and order catalog products according to the active Discover tab.
- *
- * Rules:
- * - TRENDING: Preserves default curated trending catalog order.
- * - MOST_LOVED: Prioritizes favourited items first (unified with TiHinStyleRepository), followed by reviewCount (customer feedback/admiration).
- * - BEST_SELLERS: Ranks by available sales/feedback volume (reviewCount descending). Products without review counts follow in natural order.
- * - JUST_IN: Real new arrival ordering (reverses initial catalogue index so newest entries appear first).
- */
-fun filterProducts(products: List<Product>, query: String): List<Product> {
-    if (query.isBlank()) return products
-    return products.filter {
+private val DISCOVER_CATEGORIES = listOf(
+    DiscoverCategory("New In", null),
+    DiscoverCategory("Women", listOf("women", "woman", "female")),
+    DiscoverCategory("Men", listOf("men", "man", "male")),
+    DiscoverCategory("Tops", listOf("top", "shirt", "t-shirt", "tee", "blouse")),
+    DiscoverCategory("Bottoms", listOf("jean", "trouser", "pant", "skirt", "short")),
+    DiscoverCategory("Dresses", listOf("dress", "gown")),
+    DiscoverCategory("Ethnic", listOf("kurta", "kurti", "saree", "ethnic", "lehenga"))
+)
+
+private fun filterProducts(products: List<Product>, query: String, category: DiscoverCategory): List<Product> {
+    val searched = if (query.isBlank()) products else products.filter {
         it.name.contains(query, ignoreCase = true) ||
-        it.merchant.contains(query, ignoreCase = true) ||
+        it.brand.contains(query, ignoreCase = true) ||
         it.description?.contains(query, ignoreCase = true) == true
     }
+    val keywords = category.keywords ?: return searched
+    return searched.filter { product ->
+        val haystack = product.name + " " + product.brand + " " + product.description.orEmpty()
+        keywords.any { haystack.contains(it, ignoreCase = true) }
+    }
 }
 
-fun getProductsForTab(products: List<Product>, tab: DiscoverTab): List<Product> {
-    return when (tab) {
-        DiscoverTab.TRENDING -> products
-        DiscoverTab.MOST_LOVED -> {
-            // First show user-favourited items, then items with highest review count (existing real feedback data)
-            products.sortedWith(
-                compareByDescending<Product> { it.isFavourite }
-                    .thenByDescending { it.reviewCount ?: 0 }
-            )
-        }
-        DiscoverTab.BEST_SELLERS -> {
-            // Order by customer volume/feedback (reviewCount descending, then stable natural index)
-            products.sortedWith(
-                compareByDescending { it.reviewCount ?: 0 }
-            )
-        }
-        DiscoverTab.JUST_IN -> {
-            // New arrivals: most recently added catalogue items first
-            products.reversed()
-        }
+private fun tihinScore(product: Product): Int? {
+    val rating = product.rating ?: return null
+    val normalized = (rating.coerceIn(0.0, 5.0) / 5.0) * 100.0
+    val reviewConfidence = when (product.reviewCount ?: 0) {
+        0 -> 0.0
+        in 1..9 -> 0.35
+        in 10..49 -> 0.65
+        in 50..199 -> 0.85
+        else -> 1.0
     }
+    return (normalized * (0.72 + (0.28 * reviewConfidence))).roundToInt().coerceIn(0, 100)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiscoverScreen(navController: NavController) {
     var searchQuery by remember { mutableStateOf("") }
-    var selectedTab by remember { mutableStateOf(DiscoverTab.TRENDING) }
+    var selectedCategory by remember { mutableStateOf(DISCOVER_CATEGORIES.first()) }
+    var showFilters by remember { mutableStateOf(false) }
     var showAccountPrompt by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
     var isError by remember { mutableStateOf(false) }
@@ -194,7 +188,7 @@ fun DiscoverScreen(navController: NavController) {
     }
 
     // Safely reset reveal if search query or tab changes
-    LaunchedEffect(searchQuery, selectedTab) {
+    LaunchedEffect(searchQuery, selectedCategory) {
         selectedProduct = null
     }
 
@@ -209,9 +203,8 @@ fun DiscoverScreen(navController: NavController) {
         }
     }
 
-    val displayProducts = remember(products, selectedTab, searchQuery) {
-        val tabFiltered = getProductsForTab(products, selectedTab)
-        filterProducts(tabFiltered, searchQuery)
+    val displayProducts = remember(products, selectedCategory, searchQuery) {
+        filterProducts(products, searchQuery, selectedCategory)
     }
 
     if (showAccountPrompt) {
@@ -259,50 +252,25 @@ fun DiscoverScreen(navController: NavController) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalItemSpacing = 16.dp
                 ) {
-                    // 1. HEADER
+                    // 1. COMPACT DISCOVER HEADER
                     item(span = StaggeredGridItemSpan.FullLine) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 12.dp, bottom = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(
-                                text = "Discover",
-                                fontFamily = EditorialSerif,
-                                fontSize = 32.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Charcoal,
-                                letterSpacing = (-0.5).sp
-                            )
-
+                            Text("Discover", fontFamily = EditorialSerif, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Charcoal)
                             if (!SessionManager.isGuest) {
                                 Surface(
                                     onClick = { navController.navigate(Screen.TriesCredits.route) },
-                                    shape = RoundedCornerShape(20.dp),
+                                    shape = RoundedCornerShape(18.dp),
                                     color = SurfaceColor,
-                                    border = BorderStroke(1.dp, CardBorder),
-                                    shadowElevation = SubtleCardElevation
+                                    border = BorderStroke(1.dp, CardBorder)
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.AutoAwesome,
-                                            contentDescription = "Credits",
-                                            tint = ChampagneGold,
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = "${SessionManager.credits} Credits",
-                                            fontFamily = Inter,
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = Charcoal
-                                        )
+                                    Row(Modifier.padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.AutoAwesome, null, tint = ChampagneGold, modifier = Modifier.size(13.dp))
+                                        Spacer(Modifier.width(5.dp))
+                                        Text(SessionManager.credits.toString() + " Credits", fontFamily = Inter, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Charcoal)
                                     }
                                 }
                             }
@@ -313,20 +281,11 @@ fun DiscoverScreen(navController: NavController) {
                     item(span = StaggeredGridItemSpan.FullLine) {
                         OutlinedTextField(
                             value = searchQuery,
-                            onValueChange = {
-                                searchQuery = it
-                                selectedProduct = null
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 16.dp),
-                            placeholder = {
-                                Text("Search outfits, brands, products...", color = SecondaryText, fontSize = 14.sp)
-                            },
-                            leadingIcon = {
-                                Icon(Icons.Default.Search, contentDescription = "Search", tint = SecondaryText)
-                            },
-                            shape = RoundedCornerShape(16.dp),
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            placeholder = { Text("Search clothes, brands...", color = SecondaryText, fontSize = 13.sp) },
+                            leadingIcon = { Icon(Icons.Default.Search, "Search", tint = SecondaryText, modifier = Modifier.size(19.dp)) },
+                            shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedContainerColor = SurfaceColor,
                                 unfocusedContainerColor = SurfaceColor,
@@ -334,54 +293,80 @@ fun DiscoverScreen(navController: NavController) {
                                 focusedBorderColor = DeepForest,
                                 cursorColor = DeepForest
                             ),
-                            singleLine = true
+                            singleLine = true,
+                            textStyle = LocalTextStyle.current.copy(fontSize = 13.sp, fontFamily = Inter)
                         )
                     }
 
-                    // 3. TABS (Fixed single-row compact editorial tabs, all 4 visible without scrolling)
+                    // 3. CLOTHING CATEGORIES
+                    item(span = StaggeredGridItemSpan.FullLine) {
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(top = 10.dp, bottom = 8.dp)
+                        ) {
+                            items(DISCOVER_CATEGORIES) { category ->
+                                val selected = selectedCategory.label == category.label
+                                Surface(
+                                    onClick = { selectedCategory = category },
+                                    shape = RoundedCornerShape(18.dp),
+                                    color = if (selected) DeepForest else SurfaceColor,
+                                    border = if (selected) null else BorderStroke(1.dp, CardBorder),
+                                    modifier = Modifier.height(34.dp)
+                                ) {
+                                    Box(Modifier.padding(horizontal = 13.dp), contentAlignment = Alignment.Center) {
+                                        Text(category.label, fontFamily = Inter, fontSize = 11.5.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium, color = if (selected) Color.White else Charcoal)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 4. FILTER
                     item(span = StaggeredGridItemSpan.FullLine) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 24.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            DiscoverTab.values().forEach { tab ->
-                                val isSelected = selectedTab == tab
-                                Column(
-                                    modifier = Modifier
-                                        .defaultMinSize(minHeight = 48.dp)
-                                        .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = null
-                                        ) {
-                                            selectedTab = tab
-                                            selectedProduct = null
-                                        }
-                                        .padding(horizontal = 4.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
+                            Text(
+                                if (searchQuery.isBlank()) selectedCategory.label + " styles" else "Search results",
+                                fontFamily = EditorialSerif,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Charcoal
+                            )
+                            OutlinedButton(
+                                onClick = { showFilters = !showFilters },
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, CardBorder),
+                                contentPadding = PaddingValues(horizontal = 11.dp, vertical = 5.dp),
+                                modifier = Modifier.height(36.dp)
+                            ) {
+                                Icon(Icons.Default.FilterList, null, modifier = Modifier.size(16.dp), tint = DeepForest)
+                                Spacer(Modifier.width(5.dp))
+                                Text("Filter", fontFamily = Inter, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, color = Charcoal)
+                            }
+                        }
+                    }
+
+                    if (showFilters) {
+                        item(span = StaggeredGridItemSpan.FullLine) {
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = SurfaceColor,
+                                border = BorderStroke(1.dp, CardBorder),
+                                modifier = Modifier.padding(bottom = 10.dp)
+                            ) {
+                                Row(
+                                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = tab.title,
-                                        fontSize = 12.sp,
-                                        fontFamily = Inter,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = if (isSelected) DeepForest else SecondaryText,
-                                        textAlign = TextAlign.Center,
-                                        maxLines = 1
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .width(24.dp)
-                                            .height(2.dp)
-                                            .background(
-                                                color = if (isSelected) DeepForest else Color.Transparent,
-                                                shape = RoundedCornerShape(1.dp)
-                                            )
-                                    )
+                                    Text("More filters", fontFamily = Inter, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, color = Charcoal)
+                                    Text("Price", fontFamily = Inter, fontSize = 11.sp, color = SecondaryText)
+                                    Text("Brand", fontFamily = Inter, fontSize = 11.sp, color = SecondaryText)
+                                    Text("Score", fontFamily = Inter, fontSize = 11.sp, color = SecondaryText)
                                 }
                             }
                         }
@@ -866,121 +851,52 @@ fun DiscoverEditorialCard(
     onTryOn: () -> Unit,
     onToggleFavourite: () -> Unit
 ) {
-    val formatter = remember {
-        NumberFormat.getCurrencyInstance(Locale("en", "IN")).apply {
-            maximumFractionDigits = 0
-        }
-    }
+    val formatter = remember { NumberFormat.getCurrencyInstance(Locale("en", "IN")).apply { maximumFractionDigits = 0 } }
     val formattedPrice = formatter.format(product.price)
+    val score = tihinScore(product)
+    val imageHeight = product.cardHeight.coerceIn(190, 280).dp
 
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceColor),
-        border = BorderStroke(1.dp, CardBorder),
-        elevation = CardDefaults.cardElevation(defaultElevation = SubtleCardElevation),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onCardClick)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(product.cardHeight.dp)
-                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                    .background(SurfaceVariantColor)
+    Column(modifier = Modifier.fillMaxWidth().clickable(onClick = onCardClick)) {
+        Box(
+            modifier = Modifier.fillMaxWidth().height(imageHeight).clip(RoundedCornerShape(14.dp)).background(SurfaceVariantColor)
+        ) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current).data(product.imageUrl).crossfade(220).build(),
+                contentDescription = product.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            Surface(
+                onClick = onToggleFavourite,
+                shape = CircleShape,
+                color = SurfaceColor.copy(alpha = 0.94f),
+                border = BorderStroke(1.dp, CardBorder),
+                modifier = Modifier.padding(8.dp).minimumInteractiveComponentSize().size(34.dp).align(Alignment.TopEnd)
             ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(product.imageUrl)
-                        .crossfade(250)
-                        .build(),
-                    contentDescription = product.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                // Favorite Action Button - isolated touch target
-                val favInteraction = remember { MutableInteractionSource() }
-                Surface(
-                    onClick = onToggleFavourite,
-                    interactionSource = favInteraction,
-                    shape = CircleShape,
-                    color = SurfaceColor.copy(alpha = 0.92f),
-                    border = BorderStroke(1.dp, CardBorder),
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .minimumInteractiveComponentSize()
-                        .size(36.dp)
-                        .align(Alignment.TopEnd)
-                        .tihinButtonPress(favInteraction, pressedScale = 0.92f)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        TiHinAnimatedHeartIcon(
-                            isFavourite = product.isFavourite,
-                            contentDescription = if (product.isFavourite) "Remove from favourites" else "Add to favourites",
-                            activeTint = DeepForest,
-                            inactiveTint = PrimaryText,
-                            iconSize = 18.dp
-                        )
-                    }
+                Box(contentAlignment = Alignment.Center) {
+                    TiHinAnimatedHeartIcon(product.isFavourite, if (product.isFavourite) "Remove from favourites" else "Save product", DeepForest, PrimaryText, 17.dp)
                 }
             }
-
-            Column(modifier = Modifier.padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 16.dp)) {
-                Text(
-                    text = product.merchant.uppercase(),
-                    style = BrandTagStyle,
-                    color = SecondaryText,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = product.name,
-                    style = ProductNameStyle,
-                    color = PrimaryText,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = formattedPrice,
-                    style = PriceStyle,
-                    color = PrimaryText
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                val tryOnInteraction = remember { MutableInteractionSource() }
-                Button(
-                    onClick = onTryOn,
-                    interactionSource = tryOnInteraction,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = PurchaseCTA,
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .tihinButtonPress(tryOnInteraction)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Try On",
-                        style = ButtonTextStyle,
-                        fontSize = 13.sp,
-                        color = Color.White
-                    )
-                }
-            }
+        }
+        Spacer(Modifier.height(7.dp))
+        Text(product.merchant, fontFamily = Inter, fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.5.sp, color = SecondaryText, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(formattedPrice, fontFamily = Inter, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = PrimaryText)
+            if (score != null) Text("TiHin $score", fontFamily = Inter, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = DeepForest)
+        }
+        Spacer(Modifier.height(6.dp))
+        val interaction = remember { MutableInteractionSource() }
+        Button(
+            onClick = onTryOn,
+            interactionSource = interaction,
+            colors = ButtonDefaults.buttonColors(containerColor = DeepForest, contentColor = Color.White),
+            shape = RoundedCornerShape(9.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.fillMaxWidth().height(34.dp).tihinButtonPress(interaction)
+        ) {
+            Icon(Icons.Default.AutoAwesome, null, modifier = Modifier.size(12.dp))
+            Spacer(Modifier.width(4.dp))
+            Text("Try On", fontFamily = Inter, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -1005,396 +921,112 @@ fun PeekRevealCard(
     onBuy: () -> Unit,
     onToggleFavourite: () -> Unit
 ) {
-    val formatter = remember {
-        NumberFormat.getCurrencyInstance(Locale("en", "IN")).apply {
-            maximumFractionDigits = 0
-        }
-    }
+    val formatter = remember { NumberFormat.getCurrencyInstance(Locale("en", "IN")).apply { maximumFractionDigits = 0 } }
     val formattedPrice = formatter.format(product.price)
-    val images = remember(product) {
-        if (product.productImages.isNotEmpty()) product.productImages else listOf(product.imageUrl)
-    }
-
+    val score = tihinScore(product)
+    val images = remember(product) { if (product.productImages.isNotEmpty()) product.productImages else listOf(product.imageUrl) }
     val pagerState = rememberPagerState(pageCount = { images.size })
-
-    // Track user interacting globally to disable auto-scroll
-    var isUserInteracting by remember { mutableStateOf(false) }
-
-    LaunchedEffect(pagerState, images.size, isUserInteracting) {
-        if (images.size > 1 && !isUserInteracting) {
-            while (isActive) {
-                delay(3500)
-                if (!pagerState.isScrollInProgress && !isUserInteracting) {
-                    val nextPage = (pagerState.currentPage + 1) % images.size
-                    pagerState.animateScrollToPage(nextPage, animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing))
-                }
-            }
-        }
-    }
 
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceColor),
-        border = BorderStroke(1.dp, BorderColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight(0.85f) // Take up substantially more screen height
-            .widthIn(max = 380.dp)
-            .padding(horizontal = 16.dp, vertical = 16.dp)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) { /* Consume click inside card */ }
+        border = BorderStroke(1.dp, CardBorder),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        modifier = Modifier.fillMaxWidth().widthIn(max = 380.dp).fillMaxHeight(0.78f).padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // 1. PRODUCT GALLERY VISUAL AREA (Hero Image)
+        Column(Modifier.fillMaxSize()) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f) // Expands to fill available vertical space
-                    .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
-                    .background(SurfaceVariantColor)
+                Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)).background(SurfaceVariantColor)
             ) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
-                    userScrollEnabled = !isUserInteracting // Lock pager when zooming
-                ) { page ->
-                    var scale by remember { mutableFloatStateOf(1f) }
-                    var offsetX by remember { mutableFloatStateOf(0f) }
-                    var offsetY by remember { mutableFloatStateOf(0f) }
-
-                    // Reset zoom state if pager changes to another page
-                    LaunchedEffect(pagerState.currentPage) {
-                        if (pagerState.currentPage != page) {
-                            scale = 1f
-                            offsetX = 0f
-                            offsetY = 0f
-                            if (isUserInteracting) isUserInteracting = false
-                        }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .pointerInput(Unit) {
-                                detectTapGestures(
-                                    onDoubleTap = {
-                                        if (scale > 1f) {
-                                            scale = 1f
-                                            offsetX = 0f
-                                            offsetY = 0f
-                                            isUserInteracting = false
-                                        } else {
-                                            scale = 2f
-                                            isUserInteracting = true
-                                        }
-                                    }
-                                )
-                            }
-                            .pointerInput(Unit) {
-                                detectTransformGestures { _, pan, zoom, _ ->
-                                    val newScale = (scale * zoom).coerceIn(1f, 3f)
-                                    scale = newScale
-                                    if (scale > 1.05f) {
-                                        val maxX = (size.width * (scale - 1)) / 2f
-                                        val maxY = (size.height * (scale - 1)) / 2f
-                                        offsetX = (offsetX + pan.x).coerceIn(-maxX, maxX)
-                                        offsetY = (offsetY + pan.y).coerceIn(-maxY, maxY)
-                                        isUserInteracting = true
-                                    } else {
-                                        scale = 1f
-                                        offsetX = 0f
-                                        offsetY = 0f
-                                        isUserInteracting = false
-                                    }
-                                }
-                            }
-                            .graphicsLayer {
-                                scaleX = scale
-                                scaleY = scale
-                                translationX = offsetX
-                                translationY = offsetY
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(images[page])
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = "${product.name} - view ${page + 1} of ${images.size}",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
+                HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current).data(images[page]).crossfade(true).build(),
+                        contentDescription = product.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
-
-                // Top Controls: Close button (Primary dismissal) & Heart button
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Close Button
+                Row(Modifier.fillMaxWidth().padding(10.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         onClick = onClose,
                         shape = CircleShape,
-                        color = Color.White.copy(alpha = 0.92f),
-                        border = BorderStroke(1.dp, BorderColor),
-                        modifier = Modifier
-                            .minimumInteractiveComponentSize()
-                            .size(38.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Close product preview",
-                                tint = PrimaryText,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-
-                    // Action Controls: Price Tracking and Heart
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Price Tracking Button
-                        val isPriceTracked = TiHinStyleRepository.isPriceTracked(product.id)
-                        val peekPriceInteraction = remember { MutableInteractionSource() }
+                        color = Color.White.copy(alpha = 0.94f),
+                        border = BorderStroke(1.dp, CardBorder),
+                        modifier = Modifier.minimumInteractiveComponentSize().size(38.dp)
+                    ) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Close, "Close", tint = PrimaryText, modifier = Modifier.size(18.dp)) } }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Surface(
-                            onClick = {
-                                TiHinStyleRepository.togglePriceTracking(product.id)
-                            },
-                            interactionSource = peekPriceInteraction,
+                            onClick = { TiHinStyleRepository.togglePriceTracking(product.id) },
                             shape = CircleShape,
-                            color = Color.White.copy(alpha = 0.92f),
-                            border = BorderStroke(1.dp, BorderColor),
-                            modifier = Modifier
-                                .minimumInteractiveComponentSize()
-                                .size(38.dp)
-                                .tihinButtonPress(peekPriceInteraction, pressedScale = 0.92f)
+                            color = Color.White.copy(alpha = 0.94f),
+                            border = BorderStroke(1.dp, CardBorder),
+                            modifier = Modifier.minimumInteractiveComponentSize().size(38.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = if (isPriceTracked) Icons.Default.NotificationsActive else Icons.Default.NotificationsNone,
-                                    contentDescription = if (isPriceTracked) "Disable price tracking" else "Enable price tracking",
-                                    tint = if (isPriceTracked) ChampagneGold else PrimaryText,
-                                    modifier = Modifier.size(18.dp)
-                                )
+                                Icon(if (TiHinStyleRepository.isPriceTracked(product.id)) Icons.Default.NotificationsActive else Icons.Default.NotificationsNone, "Price tracking", tint = if (TiHinStyleRepository.isPriceTracked(product.id)) ChampagneGold else PrimaryText, modifier = Modifier.size(18.dp))
                             }
                         }
-
-                        // Heart Button
-                        val peekFavInteraction = remember { MutableInteractionSource() }
                         Surface(
                             onClick = onToggleFavourite,
-                            interactionSource = peekFavInteraction,
                             shape = CircleShape,
-                            color = Color.White.copy(alpha = 0.92f),
-                            border = BorderStroke(1.dp, BorderColor),
-                            modifier = Modifier
-                                .minimumInteractiveComponentSize()
-                                .size(38.dp)
-                                .tihinButtonPress(peekFavInteraction, pressedScale = 0.92f)
+                            color = Color.White.copy(alpha = 0.94f),
+                            border = BorderStroke(1.dp, CardBorder),
+                            modifier = Modifier.minimumInteractiveComponentSize().size(38.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                TiHinAnimatedHeartIcon(
-                                    isFavourite = product.isFavourite,
-                                    contentDescription = if (product.isFavourite) "Remove from favourites" else "Add to favourites",
-                                    activeTint = DeepForest,
-                                    inactiveTint = PrimaryText,
-                                    iconSize = 18.dp
-                                )
+                                TiHinAnimatedHeartIcon(product.isFavourite, if (product.isFavourite) "Remove from favourites" else "Save product", DeepForest, PrimaryText, 18.dp)
                             }
                         }
                     }
                 }
-
-                // Bottom Gallery Indicator / Counter Pill (shown if > 1 image)
                 if (images.size > 1) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = PrimaryText.copy(alpha = 0.72f),
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "${pagerState.currentPage + 1} / ${images.size}",
-                                style = MetadataCaptionStyle,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.White
-                            )
-                        }
+                    Surface(shape = RoundedCornerShape(12.dp), color = PrimaryText.copy(alpha = 0.72f), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp)) {
+                        Text(
+                            (pagerState.currentPage + 1).toString() + " / " + images.size,
+                            fontFamily = Inter, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = Color.White,
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
+                        )
                     }
                 }
             }
 
-            // 2. PRODUCT INFORMATION & ACTIONS
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-            ) {
-                // Scrollable metadata area to accommodate small screens / font scaling
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f, fill = false)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = product.merchant.uppercase(),
-                            style = BrandTagStyle,
-                            color = SecondaryText,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-                        // Optional Rating Pill
-                        if (product.rating != null) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(3.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = null,
-                                    tint = ChampagneGold,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Text(
-                                    text = String.format(Locale.getDefault(), "%.1f", product.rating),
-                                    style = MetadataCaptionStyle,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = PrimaryText
-                                )
-                                if (product.reviewCount != null) {
-                                    Text(
-                                        text = "(${product.reviewCount})",
-                                        style = MetadataCaptionStyle,
-                                        color = TertiaryText,
-                                        fontSize = 11.sp
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(2.dp))
-
-                    Text(
-                        text = product.name,
-                        style = ProductNameStyle,
-                        fontSize = 15.sp,
-                        color = PrimaryText,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    Spacer(modifier = Modifier.height(2.dp))
-
-                    Text(
-                        text = formattedPrice,
-                        style = PriceStyle,
-                        fontSize = 15.sp,
-                        color = PrimaryText
-                    )
-
-                    if (!product.description.isNullOrBlank()) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = product.description,
-                            style = BodyContentStyle,
-                            color = SecondaryText,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Text(product.merchant.uppercase(), fontFamily = Inter, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.7.sp, color = SecondaryText, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Spacer(Modifier.height(3.dp))
+                Text(product.name, fontFamily = Inter, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = PrimaryText, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(formattedPrice, fontFamily = Inter, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = PrimaryText)
+                    if (score != null) Text("TiHin Score " + score, fontFamily = Inter, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = DeepForest)
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // 3. ACTIONS: Primary "Try On" (60%) and Secondary "Buy ↗" (40%)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Primary Action: Try On
-                    val peekTryOnInteraction = remember { MutableInteractionSource() }
+                Spacer(Modifier.height(10.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val tryInteraction = remember { MutableInteractionSource() }
                     Button(
                         onClick = onTryOn,
-                        interactionSource = peekTryOnInteraction,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = PurchaseCTA,
-                            contentColor = Color.White
-                        ),
-                        modifier = Modifier
-                            .weight(0.6f)
-                            .height(48.dp)
-                            .tihinButtonPress(peekTryOnInteraction)
+                        interactionSource = tryInteraction,
+                        colors = ButtonDefaults.buttonColors(containerColor = DeepForest, contentColor = Color.White),
+                        shape = RoundedCornerShape(11.dp),
+                        modifier = Modifier.height(42.dp).weight(0.58f).tihinButtonPress(tryInteraction)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(15.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Try On",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.White,
-                            maxLines = 1
-                        )
+                        Icon(Icons.Default.AutoAwesome, null, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(5.dp))
+                        Text("Try On", fontFamily = Inter, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
-
-                    // Secondary Action: Buy ↗
-                    val peekBuyInteraction = remember { MutableInteractionSource() }
+                    val buyInteraction = remember { MutableInteractionSource() }
                     OutlinedButton(
                         onClick = onBuy,
-                        interactionSource = peekBuyInteraction,
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, BorderColor),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = SurfaceVariantColor,
-                            contentColor = PrimaryText
-                        ),
-                        modifier = Modifier
-                            .weight(0.4f)
-                            .height(48.dp)
-                            .tihinButtonPress(peekBuyInteraction)
+                        interactionSource = buyInteraction,
+                        shape = RoundedCornerShape(11.dp),
+                        border = BorderStroke(1.dp, CardBorder),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = SurfaceVariantColor, contentColor = PrimaryText),
+                        modifier = Modifier.height(42.dp).weight(0.42f).tihinButtonPress(buyInteraction)
                     ) {
-                        Text(
-                            text = "Buy ↗",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = PrimaryText,
-                            maxLines = 1
-                        )
+                        Text("Buy on " + product.merchant, fontFamily = Inter, fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }
         }
     }
 }
+

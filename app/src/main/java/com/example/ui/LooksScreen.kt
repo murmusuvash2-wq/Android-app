@@ -97,13 +97,14 @@ fun LooksScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(horizontal = 20.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "Your Looks",
-                fontSize = 26.sp,
+                fontFamily = com.example.ui.theme.EditorialSerif,
+                fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
                 color = PrimaryText
             )
@@ -125,8 +126,8 @@ fun LooksScreen(
                     text = {
                         Text(
                             text = title,
-                            fontSize = 14.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 13.sp,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                             color = if (isSelected) DeepForest else SecondaryText
                         )
                     }
@@ -296,7 +297,7 @@ fun LookCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
+                    .height(210.dp)
                     .background(SurfaceVariantColor)
             ) {
                 AsyncImage(

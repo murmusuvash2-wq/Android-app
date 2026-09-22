@@ -3,8 +3,26 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- TiHin Icon Letter T and H stylized luxury motif -->
+
+    <!-- TiHin hanger mark: designed to remain recognizable at small launcher sizes -->
     <path
-        android:fillColor="#3F5147"
-        android:pathData="M34,36 h40 v8 h-16 v28 h-8 v-28 h-16 z" />
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#3F5147"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M54,28
+            C47,18 50,11 58,12
+            C69,14 67,25 56,30
+            L20,57
+            C14,61 14,68 21,71
+            L51,87
+            C53,88 55,88 58,87
+            L87,72
+            C94,68 94,62 88,58
+            L62,43" />
+
+    <path
+        android:fillColor="#C9A961"
+        android:pathData="M83,20 L86,29 L95,32 L86,35 L83,44 L80,35 L71,32 L80,29 Z" />
 </vector>

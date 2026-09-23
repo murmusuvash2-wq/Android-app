@@ -148,13 +148,13 @@ fun MeScreen(
     ) {
         // Top Header
         Column(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             Text(
                 text = "Profile",
                 fontFamily = EditorialSerif,
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.SemiBold,
                 color = Charcoal,
                 letterSpacing = (-0.5).sp
             )
@@ -172,20 +172,20 @@ fun MeScreen(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp),
-            shape = RoundedCornerShape(16.dp),
+                .padding(horizontal = 14.dp),
+            shape = RoundedCornerShape(14.dp),
             colors = CardDefaults.cardColors(containerColor = DeepForestContainer),
             border = BorderStroke(1.dp, CardBorder),
             elevation = CardDefaults.cardElevation(defaultElevation = SubtleCardElevation)
         ) {
-            Column(modifier = Modifier.padding(14.dp)) {
+            Column(modifier = Modifier.padding(12.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(54.dp)
+                            .size(50.dp)
                             .clip(CircleShape)
                             .background(SurfaceColor),
                         contentAlignment = Alignment.Center
@@ -194,20 +194,20 @@ fun MeScreen(
                             imageVector = Icons.Default.Person,
                             contentDescription = "User Avatar",
                             tint = DeepForest,
-                            modifier = Modifier.size(30.dp)
+                            modifier = Modifier.size(27.dp)
                         )
                     }
 
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .padding(horizontal = 16.dp)
+                            .padding(horizontal = 12.dp)
                     ) {
                         Text(
                             text = if (isGuest) "Guest User" else userDisplayName,
                             fontFamily = Inter,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
                             color = Charcoal,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -215,7 +215,7 @@ fun MeScreen(
                         Text(
                             text = if (isGuest) "Sign in to save try-ons & sync" else (userEmail ?: "Member"),
                             fontFamily = Inter,
-                            fontSize = 13.sp,
+                            fontSize = 12.sp,
                             color = SecondaryText,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -260,9 +260,9 @@ fun MeScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
-                HorizontalDivider(color = CardBorder, thickness = 0.5.dp)
                 Spacer(modifier = Modifier.height(10.dp))
+                HorizontalDivider(color = CardBorder, thickness = 0.5.dp)
+                Spacer(modifier = Modifier.height(6.dp))
 
                 // Edit Profile Entry Point
                 Row(
@@ -300,7 +300,7 @@ fun MeScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         // ==========================================
         // 2. YOUR ACTIVITY SECTION
@@ -308,19 +308,19 @@ fun MeScreen(
         Text(
             text = "YOUR ACTIVITY",
             fontFamily = Inter,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.2.sp,
+            fontSize = 10.5.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.1.sp,
             color = SoftCharcoal,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 3.dp)
         )
         Spacer(modifier = Modifier.height(6.dp))
 
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp),
-            shape = RoundedCornerShape(16.dp),
+                .padding(horizontal = 14.dp),
+            shape = RoundedCornerShape(14.dp),
             colors = CardDefaults.cardColors(containerColor = SurfaceColor),
             border = BorderStroke(1.dp, CardBorder),
             elevation = CardDefaults.cardElevation(defaultElevation = SubtleCardElevation)
@@ -1036,12 +1036,12 @@ fun ProfileOptionRow(
                 interactionSource = interactionSource,
                 indication = null
             ) { onClick() }
-            .padding(16.dp),
+            .padding(horizontal = 12.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(40.dp)
+                .size(36.dp)
                 .clip(CircleShape)
                 .background(DeepForestContainer),
             contentAlignment = Alignment.Center
@@ -1050,7 +1050,7 @@ fun ProfileOptionRow(
                 imageVector = icon,
                 contentDescription = null,
                 tint = DeepForest,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(18.dp)
             )
         }
 
@@ -1062,14 +1062,14 @@ fun ProfileOptionRow(
             Text(
                 text = title,
                 fontFamily = Inter,
-                fontSize = 15.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Charcoal
             )
             Text(
                 text = subtitle,
                 fontFamily = Inter,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 color = SecondaryText
             )
         }

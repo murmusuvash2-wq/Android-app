@@ -80,13 +80,13 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun SplashScreen(navController: NavController) {
-    val scale = remember { Animatable(0.92f) }
+    val scale = remember { Animatable(0.96f) }
 
     LaunchedEffect(Unit) {
         scale.animateTo(
-            targetValue = 1.05f,
+            targetValue = 1.02f,
             animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 900, easing = FastOutSlowInEasing),
+                animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse
             )
         )
@@ -114,21 +114,37 @@ fun SplashScreen(navController: NavController) {
                 modifier = Modifier.scale(scale.value)
             ) {
                 TiHinLogo(
-                    textSize = 42.sp,
+                    textSize = 46.sp,
                     showSparkle = true
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Text(
                 text = "Try. Love. Buy.",
                 fontFamily = Inter,
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = SoftCharcoal,
-                letterSpacing = 2.sp
+                letterSpacing = 2.2.sp
             )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                repeat(3) {
+                    Box(
+                        modifier = Modifier
+                            .size(5.dp)
+                            .clip(CircleShape)
+                            .background(DeepForest.copy(alpha = 0.55f))
+                    )
+                }
+            }
         }
     }
 }

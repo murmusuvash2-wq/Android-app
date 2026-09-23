@@ -109,10 +109,10 @@ fun HomeScreen(
             .background(WarmIvory)
             .verticalScroll(scrollState)
             .padding(horizontal = 16.dp)
-            .padding(top = 12.dp, bottom = 20.dp)
+            .padding(top = 10.dp, bottom = 16.dp)
     ) {
         HomeHeader(navController)
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
 
         HeroTryOnCard(
             product = heroProduct,
@@ -124,7 +124,7 @@ fun HomeScreen(
             }
         )
 
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -158,7 +158,7 @@ fun HomeScreen(
             )
         }
 
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(12.dp))
 
         HomeSectionHeader(
             title = "Explore styles",
@@ -166,10 +166,10 @@ fun HomeScreen(
             action = "Discover",
             onAction = onNavigateToDiscover
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
         CategoryRow(products = products, onDiscover = onNavigateToDiscover)
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
 
         HomeSectionHeader(
             title = "Trending Now",
@@ -177,7 +177,7 @@ fun HomeScreen(
             action = "See all",
             onAction = onNavigateToDiscover
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
         TrendingEditorial(
             products = trendingProducts.take(3),
             onTryOn = { product ->
@@ -187,7 +187,7 @@ fun HomeScreen(
             onDiscover = onNavigateToDiscover
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
 
         HomeSectionHeader(
             title = "Most Loved",
@@ -195,7 +195,7 @@ fun HomeScreen(
             action = "See all",
             onAction = onNavigateToDiscover
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -212,9 +212,7 @@ fun HomeScreen(
             }
         }
 
-        Spacer(Modifier.height(16.dp))
-        BrandBanner()
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(12.dp))
     }
 }
 
@@ -300,7 +298,7 @@ private fun HeroTryOnCard(product: Product?, onTryOn: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-             .height(210.dp)
+             .height(196.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(SurfaceVariantColor)
     ) {
@@ -422,7 +420,7 @@ private fun HomePhotoAction(
         border = if (primary) null else BorderStroke(1.dp, CardBorder),
         shadowElevation = if (primary) 1.dp else 0.dp,
         modifier = modifier
-            .height(58.dp)
+            .height(54.dp)
             .tihinButtonPress(source)
     ) {
         Row(
@@ -516,7 +514,7 @@ private fun CategoryChip(label: String, imageUrl: String?, onClick: () -> Unit) 
     ) {
         Box(
             modifier = Modifier
-                 .height(68.dp)
+                 .height(62.dp)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
                 .background(SurfaceColor)
@@ -577,7 +575,7 @@ private fun TrendingEditorial(
         )
 
         Column(
-            modifier = Modifier.weight(0.92f).height(238.dp),
+            modifier = Modifier.weight(0.92f).height(216.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             sideProducts.forEach { product ->
@@ -758,7 +756,7 @@ private fun HomeProductCard(product: Product, onTryOn: () -> Unit) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                     .height(182.dp)
+                     .height(166.dp)
                     .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
                     .background(SurfaceVariantColor)
             ) {
@@ -840,10 +838,10 @@ private fun HomeProductCard(product: Product, onTryOn: () -> Unit) {
                     interactionSource = trySource,
                     shape = RoundedCornerShape(10.dp),
                     border = BorderStroke(1.dp, DeepForest.copy(alpha = 0.55f)),
-                    contentPadding = PaddingValues(horizontal = 9.dp, vertical = 4.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 3.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(33.dp)
+                        .height(31.dp)
                         .tihinButtonPress(trySource)
                 ) {
                     Icon(

@@ -151,6 +151,7 @@ fun SplashScreen(navController: NavController) {
 
 data class OnboardingSlide(
     val title: String,
+    val eyebrow: String,
     val subtitle: String,
     val icon: ImageVector
 )
@@ -160,18 +161,21 @@ data class OnboardingSlide(
 fun OnboardingScreen(navController: NavController) {
     val slides = listOf(
         OnboardingSlide(
-            title = "Try",
-            subtitle = "See it on you before you buy with instant virtual fitting.",
+            title = "Try.",
+            eyebrow = "SEE IT ON YOU",
+            subtitle = "See it on you before you buy.",
             icon = Icons.Default.Visibility
         ),
         OnboardingSlide(
-            title = "Love",
-            subtitle = "Find your perfect look and curated styles with complete confidence.",
+            title = "Love.",
+            eyebrow = "FIND YOUR STYLE",
+            subtitle = "Find your perfect look with confidence.",
             icon = Icons.Default.Favorite
         ),
         OnboardingSlide(
-            title = "Buy",
-            subtitle = "Shop your favourite outfits directly from verified merchant stores.",
+            title = "Buy.",
+            eyebrow = "SHOP YOUR FAVOURITES",
+            subtitle = "Shop your favourite styles in just a tap.",
             icon = Icons.Default.ShoppingBag
         )
     )
@@ -188,9 +192,7 @@ fun OnboardingScreen(navController: NavController) {
             .navigationBarsPadding()
             .testTag("onboarding_screen")
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -198,10 +200,7 @@ fun OnboardingScreen(navController: NavController) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                TiHinLogo(
-                    textSize = 22.sp,
-                    showSparkle = true
-                )
+                TiHinLogo(textSize = 22.sp, showSparkle = true)
 
                 TextButton(
                     onClick = { showAuthSheet = true },
@@ -209,7 +208,7 @@ fun OnboardingScreen(navController: NavController) {
                 ) {
                     Text(
                         text = "Skip",
-                        fontSize = 14.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = SoftCharcoal
                     )
@@ -223,48 +222,70 @@ fun OnboardingScreen(navController: NavController) {
                     .fillMaxWidth()
             ) { page ->
                 val slide = slides[page]
+
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 36.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                        .padding(horizontal = 28.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(132.dp)
-                            .clip(RoundedCornerShape(38.dp))
+                            .fillMaxWidth()
+                            .height(300.dp)
+                            .clip(RoundedCornerShape(28.dp))
                             .background(SurfaceVariantColor),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = slide.icon,
-                            contentDescription = null,
-                            tint = DeepForest,
-                            modifier = Modifier.size(44.dp)
+                        Box(
+                            modifier = Modifier
+                                .size(112.dp)
+                                .clip(CircleShape)
+                                .background(WarmIvory),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = slide.icon,
+                                contentDescription = null,
+                                tint = DeepForest,
+                                modifier = Modifier.size(42.dp)
+                            )
+                        }
+
+                        Text(
+                            text = slide.eyebrow,
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(18.dp),
+                            fontFamily = Inter,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.4.sp,
+                            color = DeepForest
+                        )
+
+                        Text(
+                            text = slide.title,
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(20.dp),
+                            fontFamily = EditorialSerif,
+                            fontSize = 46.sp,
+                            lineHeight = 46.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryText
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Text(
-                        text = slide.title,
-                        fontFamily = EditorialSerif,
-                        fontSize = 34.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PrimaryText,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(22.dp))
 
                     Text(
                         text = slide.subtitle,
                         fontFamily = Inter,
-                        fontSize = 14.sp,
-                        color = SecondaryText,
-                        textAlign = TextAlign.Center,
-                        lineHeight = 20.sp
+                        fontSize = 16.sp,
+                        lineHeight = 22.sp,
+                        color = PrimaryText,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
@@ -272,18 +293,18 @@ fun OnboardingScreen(navController: NavController) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
+                    .padding(bottom = 14.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 repeat(slides.size) { index ->
-                    val isSelected = pagerState.currentPage == index
+                    val selected = pagerState.currentPage == index
                     Box(
                         modifier = Modifier
                             .padding(horizontal = 4.dp)
-                            .size(if (isSelected) 24.dp else 8.dp, 8.dp)
+                            .size(if (selected) 22.dp else 7.dp, 7.dp)
                             .clip(RoundedCornerShape(4.dp))
-                            .background(if (isSelected) DeepForest else BorderColor)
+                            .background(if (selected) DeepForest else BorderColor)
                     )
                 }
             }
@@ -291,7 +312,7 @@ fun OnboardingScreen(navController: NavController) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 12.dp)
+                    .padding(horizontal = 24.dp, vertical = 10.dp)
             ) {
                 if (pagerState.currentPage == slides.size - 1) {
                     Button(
@@ -306,11 +327,7 @@ fun OnboardingScreen(navController: NavController) {
                             contentColor = SurfaceColor
                         )
                     ) {
-                        Text(
-                            text = "Get Started",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Text("Get Started", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                     }
                 } else {
                     Row(
@@ -332,11 +349,7 @@ fun OnboardingScreen(navController: NavController) {
                                 contentColor = SurfaceColor
                             )
                         ) {
-                            Text(
-                                text = "Next",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            Text("Next", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                             Spacer(modifier = Modifier.size(6.dp))
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,

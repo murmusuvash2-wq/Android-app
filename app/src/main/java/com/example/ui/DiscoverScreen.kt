@@ -276,18 +276,18 @@ fun DiscoverScreen(navController: NavController) {
                     state = gridState,
                     columns = StaggeredGridCells.Fixed(2),
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = SpacingXl, start = 16.dp, end = 16.dp),
+                    contentPadding = PaddingValues(bottom = SpacingXl, start = 14.dp, end = 14.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalItemSpacing = 16.dp
                 ) {
                     // 1. COMPACT DISCOVER HEADER
                     item(span = StaggeredGridItemSpan.FullLine) {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 6.dp),
+                            modifier = Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Discover", fontFamily = EditorialSerif, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Charcoal)
+                            Text("Discover", fontFamily = EditorialSerif, fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = Charcoal)
                             if (!SessionManager.isGuest) {
                                 Surface(
                                     onClick = { navController.navigate(Screen.TriesCredits.route) },
@@ -310,10 +310,10 @@ fun DiscoverScreen(navController: NavController) {
                         OutlinedTextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            modifier = Modifier.fillMaxWidth().height(44.dp),
                             placeholder = { Text("Search clothes, brands...", color = SecondaryText, fontSize = 13.sp) },
                             leadingIcon = { Icon(Icons.Default.Search, "Search", tint = SecondaryText, modifier = Modifier.size(19.dp)) },
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedContainerColor = SurfaceColor,
                                 unfocusedContainerColor = SurfaceColor,
@@ -331,7 +331,7 @@ fun DiscoverScreen(navController: NavController) {
                         LazyRow(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            contentPadding = PaddingValues(top = 8.dp, bottom = 6.dp)
+                            contentPadding = PaddingValues(top = 6.dp, bottom = 4.dp)
                         ) {
                             lazyRowItems(DISCOVER_CATEGORIES) { category ->
                                 val selected = selectedCategory.label == category.label
@@ -340,7 +340,7 @@ fun DiscoverScreen(navController: NavController) {
                                     shape = RoundedCornerShape(18.dp),
                                     color = if (selected) DeepForest else SurfaceColor,
                                     border = if (selected) null else BorderStroke(1.dp, CardBorder),
-                                    modifier = Modifier.height(32.dp)
+                                    modifier = Modifier.height(30.dp)
                                 ) {
                                     Box(Modifier.padding(horizontal = 13.dp), contentAlignment = Alignment.Center) {
                                         Text(category.label, fontFamily = Inter, fontSize = 11.5.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium, color = if (selected) Color.White else Charcoal)
@@ -353,7 +353,7 @@ fun DiscoverScreen(navController: NavController) {
                     // 4. FILTER
                     item(span = StaggeredGridItemSpan.FullLine) {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -381,7 +381,7 @@ fun DiscoverScreen(navController: NavController) {
                     if (showFilters) {
                         item(span = StaggeredGridItemSpan.FullLine) {
                             Surface(
-                                shape = RoundedCornerShape(14.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 color = SurfaceColor,
                                 border = BorderStroke(1.dp, CardBorder),
                                 modifier = Modifier.padding(bottom = 10.dp)
@@ -912,24 +912,40 @@ fun DiscoverEditorialCard(
     val formatter = remember { NumberFormat.getCurrencyInstance(Locale("en", "IN")).apply { maximumFractionDigits = 0 } }
     val formattedPrice = formatter.format(product.price)
     val score = tihinScore(product)
-    val imageHeight = product.cardHeight.coerceIn(190, 280).dp
+    val imageHeight = product.cardHeight.coerceIn(180, 250).dp
 
-    Column(modifier = Modifier.fillMaxWidth().clickable(onClick = onCardClick)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onCardClick)
+    ) {
         Box(
-            modifier = Modifier.fillMaxWidth().height(imageHeight).clip(RoundedCornerShape(14.dp)).background(SurfaceVariantColor)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(imageHeight)
+                .clip(RoundedCornerShape(12.dp))
+                .background(SurfaceVariantColor)
         ) {
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current).data(product.imageUrl).crossfade(220).build(),
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(product.imageUrl)
+                    .crossfade(180)
+                    .build(),
                 contentDescription = product.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
+
             Surface(
                 onClick = onToggleFavourite,
                 shape = CircleShape,
-                color = SurfaceColor.copy(alpha = 0.94f),
+                color = SurfaceColor.copy(alpha = 0.92f),
                 border = BorderStroke(1.dp, CardBorder),
-                modifier = Modifier.padding(8.dp).minimumInteractiveComponentSize().size(34.dp).align(Alignment.TopEnd)
+                modifier = Modifier
+                    .padding(7.dp)
+                    .minimumInteractiveComponentSize()
+                    .size(32.dp)
+                    .align(Alignment.TopEnd)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     TiHinAnimatedHeartIcon(
@@ -937,47 +953,87 @@ fun DiscoverEditorialCard(
                         contentDescription = if (product.isFavourite) "Remove from favourites" else "Save product",
                         activeTint = DeepForest,
                         inactiveTint = PrimaryText,
-                        iconSize = 17.dp
+                        iconSize = 16.dp
                     )
                 }
             }
         }
-        Spacer(Modifier.height(7.dp))
-        Text(product.merchant, fontFamily = Inter, fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.5.sp, color = SecondaryText, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(formattedPrice, fontFamily = Inter, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = PrimaryText)
-            if (score != null) Text("TiHin $score", fontFamily = Inter, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = DeepForest)
-        }
-        Spacer(Modifier.height(6.dp))
+
+        Spacer(Modifier.height(5.dp))
+
+        Text(
+            product.merchant,
+            fontFamily = Inter,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.45.sp,
+            color = SecondaryText,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        Spacer(Modifier.height(2.dp))
+
+        Text(
+            product.name,
+            fontFamily = Inter,
+            fontSize = 11.5.sp,
+            fontWeight = FontWeight.Medium,
+            color = PrimaryText,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        Spacer(Modifier.height(3.dp))
+
         Row(
             Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            val interaction = remember { MutableInteractionSource() }
-            Button(
-                onClick = onTryOn,
-                interactionSource = interaction,
-                colors = ButtonDefaults.buttonColors(containerColor = DeepForest, contentColor = Color.White),
-                shape = RoundedCornerShape(9.dp),
-                contentPadding = PaddingValues(horizontal = 7.dp, vertical = 4.dp),
-                modifier = Modifier.height(34.dp).weight(0.52f).tihinButtonPress(interaction)
-            ) {
-                Icon(Icons.Default.AutoAwesome, null, modifier = Modifier.size(12.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("Try On", fontFamily = Inter, fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                formattedPrice,
+                fontFamily = Inter,
+                fontSize = 12.5.sp,
+                fontWeight = FontWeight.Bold,
+                color = PrimaryText
+            )
+            if (score != null) {
+                Text(
+                    "TiHin $score",
+                    fontFamily = Inter,
+                    fontSize = 9.5.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = DeepForest
+                )
             }
-            if (!product.merchantUrl.isNullOrBlank()) {
-                OutlinedButton(
-                    onClick = onBuy,
-                    shape = RoundedCornerShape(9.dp),
-                    border = BorderStroke(1.dp, CardBorder),
-                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
-                    modifier = Modifier.height(34.dp).weight(0.48f)
-                ) {
-                    Text("Buy on " + product.merchant, fontFamily = Inter, fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
+        }
+
+        Spacer(Modifier.height(5.dp))
+
+        val interaction = remember { MutableInteractionSource() }
+        Button(
+            onClick = onTryOn,
+            interactionSource = interaction,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = DeepForest,
+                contentColor = Color.White
+            ),
+            shape = RoundedCornerShape(8.dp),
+            contentPadding = PaddingValues(horizontal = 7.dp, vertical = 3.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(30.dp)
+                .tihinButtonPress(interaction)
+        ) {
+            Icon(Icons.Default.AutoAwesome, null, modifier = Modifier.size(11.dp))
+            Spacer(Modifier.width(4.dp))
+            Text(
+                "Try On",
+                fontFamily = Inter,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }

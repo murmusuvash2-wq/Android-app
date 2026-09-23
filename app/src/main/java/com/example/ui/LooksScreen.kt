@@ -97,15 +97,15 @@ fun LooksScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "Your Looks",
                 fontFamily = com.example.ui.theme.EditorialSerif,
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.SemiBold,
                 color = PrimaryText
             )
         }
@@ -115,7 +115,7 @@ fun LooksScreen(
             selectedTabIndex = selectedTab,
             containerColor = WarmIvory,
             contentColor = DeepForest,
-            edgePadding = 20.dp,
+            edgePadding = 16.dp,
             divider = {}
         ) {
             tabs.forEachIndexed { index, title ->
@@ -126,7 +126,7 @@ fun LooksScreen(
                     text = {
                         Text(
                             text = title,
-                            fontSize = 13.sp,
+                            fontSize = 12.sp,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                             color = if (isSelected) DeepForest else SecondaryText
                         )
@@ -135,7 +135,7 @@ fun LooksScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
         AnimatedContent(
             targetState = selectedTab,
@@ -193,9 +193,9 @@ fun RecentLooksTab(navController: NavController) {
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             items(looks, key = { it.id }) { look ->
                 LookCard(
@@ -269,8 +269,8 @@ fun PriceTrackingTab(navController: NavController) {
         val trackedLooks = trackedIds.map { id -> TiHinStyleRepository.getProductLookup(id) }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(trackedLooks, key = { it.productId }) { look ->
                 TrackedLookRow(look, navController)
@@ -289,7 +289,7 @@ fun LookCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onTap() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceColor),
         border = BorderStroke(1.dp, BorderColor)
     ) {
@@ -297,7 +297,8 @@ fun LookCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(210.dp)
+                    .height(190.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(SurfaceVariantColor)
             ) {
                 AsyncImage(
@@ -354,16 +355,16 @@ fun LookCard(
                 }
             }
 
-            Column(modifier = Modifier.padding(12.dp)) {
+            Column(modifier = Modifier.padding(9.dp)) {
                 Text(
                     text = look.brand.uppercase(),
-                    fontSize = 10.sp,
+                    fontSize = 9.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = SecondaryText
                 )
                 Text(
                     text = look.productName,
-                    fontSize = 13.sp,
+                    fontSize = 11.5.sp,
                     fontWeight = FontWeight.Medium,
                     color = PrimaryText,
                     maxLines = 1,
@@ -372,7 +373,7 @@ fun LookCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "₹${look.price.toInt()}",
-                    fontSize = 14.sp,
+                    fontSize = 12.5.sp,
                     fontWeight = FontWeight.Bold,
                     color = PrimaryText
                 )
@@ -400,20 +401,20 @@ fun TrackedLookRow(look: SavedLook, navController: NavController) {
                     navController.navigate(Screen.TryOn.route)
                 }
             },
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceColor),
         border = BorderStroke(1.dp, BorderColor)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .size(58.dp)
+                    .clip(RoundedCornerShape(9.dp))
                     .background(SurfaceVariantColor)
             ) {
                 AsyncImage(

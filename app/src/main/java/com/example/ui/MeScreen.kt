@@ -104,6 +104,7 @@ fun MeScreen(
     // Dialog & Sheet States
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showManagePhotosDialog by remember { mutableStateOf(false) }
+    var showingProfilePhoto by remember { mutableStateOf(false) }
     var showPrivacyDialog by remember { mutableStateOf(false) }
     var showHelpDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
@@ -116,7 +117,8 @@ fun MeScreen(
         contract = ActivityResultContracts.TakePicture(),
         onResult = { success ->
             if (success && tempCameraUri != null) {
-                TryOnManager.updateUserPhoto(tempCameraUri.toString(), context)
+                if (showingProfilePhoto) TryOnManager.setProfilePhoto(tempCameraUri.toString())
+                else TryOnManager.addTryOnPhoto(tempCameraUri.toString())
             }
             tempCameraUri = null
         }
@@ -132,7 +134,8 @@ fun MeScreen(
                 } catch (e: Exception) {
                     // Fallback for cases where persistence is not allowed or already granted
                 }
-                TryOnManager.updateUserPhoto(uri.toString(), context)
+                if (showingProfilePhoto) TryOnManager.setProfilePhoto(uri.toString())
+                else TryOnManager.addTryOnPhoto(uri.toString())
             }
         }
     )
@@ -190,12 +193,21 @@ fun MeScreen(
                             .background(SurfaceColor),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "User Avatar",
-                            tint = DeepForest,
-                            modifier = Modifier.size(27.dp)
-                        )
+                        if (TryOnManager.profilePhotoUri != null) {
+                            AsyncImage(
+                                model = TryOnManager.profilePhotoUri,
+                                contentDescription = "Profile Photo",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "User Avatar",
+                                tint = DeepForest,
+                                modifier = Modifier.size(27.dp)
+                            )
+                        }
                     }
 
                     Column(
@@ -326,12 +338,24 @@ fun MeScreen(
             elevation = CardDefaults.cardElevation(defaultElevation = SubtleCardElevation)
         ) {
             Column {
-                val hasPhoto = TryOnManager.selectedUserPhotoUri != null
+                ProfileOptionRow(
+                    icon = Icons.Default.Person,
+                    title = "Profile Photo",
+                    subtitle = if (TryOnManager.profilePhotoUri != null) "1 photo · Camera or gallery" else "Add your profile photo",
+                    onClick = {
+                        showingProfilePhoto = true
+                        showManagePhotosDialog = true
+                    }
+                )
+                HorizontalDivider(color = CardBorder, thickness = 0.5.dp)
                 ProfileOptionRow(
                     icon = Icons.Default.CameraAlt,
-                    title = "My Try-On Photos",
-                    subtitle = if (hasPhoto) "1 active photo · Tap to manage" else "No photo uploaded · Tap to add",
-                    onClick = { showManagePhotosDialog = true }
+                    title = "Try-On Photos",
+                    subtitle = "${TryOnManager.getTryOnPhotoCount()}/5 saved · Choose at Try-On",
+                    onClick = {
+                        showingProfilePhoto = false
+                        showManagePhotosDialog = true
+                    }
                 )
                 HorizontalDivider(color = CardBorder, thickness = 0.5.dp)
                 ProfileOptionRow(
@@ -639,13 +663,13 @@ fun MeScreen(
 
     // 2. Manage Photos Dialog
     if (showManagePhotosDialog) {
-        val currentPhoto = TryOnManager.selectedUserPhotoUri
+        val currentPhoto = if (showingProfilePhoto) TryOnManager.profilePhotoUri else TryOnManager.selectedUserPhotoUri
         AlertDialog(
             onDismissRequest = { showManagePhotosDialog = false },
             containerColor = SurfaceColor,
             title = {
                 Text(
-                    text = "My Try-On Photos",
+                    text = if (showingProfilePhoto) "Profile Photo" else "Try-On Photos",
                     fontFamily = EditorialSerif,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
@@ -676,7 +700,7 @@ fun MeScreen(
                             )
                         }
                         Text(
-                            text = "This photo is used as your model for fitting garments.",
+                            text = if (showingProfilePhoto) "Identity photo only. It is not automatically used for Try-On." else "Save up to 5 photos and choose the one you want for each Try-On.",
                             fontFamily = Inter,
                             fontSize = 12.sp,
                             color = SecondaryText
@@ -697,7 +721,7 @@ fun MeScreen(
                             )
                         }
                         Text(
-                            text = "Upload a full-body photo to preview any outfit instantly on yourself.",
+                            text = if (showingProfilePhoto) "Add one photo for your TiHin profile." else "Add up to 5 photos for virtual fitting.",
                             fontFamily = Inter,
                             fontSize = 13.sp,
                             color = SecondaryText

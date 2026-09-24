@@ -6,6 +6,7 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -56,6 +57,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -77,6 +79,7 @@ import com.example.ui.theme.SurfaceVariantColor
 import com.example.ui.theme.WarmIvory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import coil.compose.AsyncImage
 
 @Composable
 fun SplashScreen(navController: NavController) {
@@ -153,7 +156,8 @@ data class OnboardingSlide(
     val title: String,
     val eyebrow: String,
     val subtitle: String,
-    val icon: ImageVector
+    val icon: ImageVector,
+    val imageUrl: String
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -164,19 +168,22 @@ fun OnboardingScreen(navController: NavController) {
             title = "Try.",
             eyebrow = "SEE IT ON YOU",
             subtitle = "See it on you before you buy.",
-            icon = Icons.Default.Visibility
+            icon = Icons.Default.Visibility,
+            imageUrl = "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1200&q=85"
         ),
         OnboardingSlide(
             title = "Love.",
             eyebrow = "FIND YOUR STYLE",
             subtitle = "Find your perfect look with confidence.",
-            icon = Icons.Default.Favorite
+            icon = Icons.Default.Favorite,
+            imageUrl = "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1200&q=85"
         ),
         OnboardingSlide(
             title = "Buy.",
             eyebrow = "SHOP YOUR FAVOURITES",
             subtitle = "Shop your favourite styles in just a tap.",
-            icon = Icons.Default.ShoppingBag
+            icon = Icons.Default.ShoppingBag,
+            imageUrl = "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?auto=format&fit=crop&w=1200&q=85"
         )
     )
 
@@ -234,21 +241,37 @@ fun OnboardingScreen(navController: NavController) {
                             .fillMaxWidth()
                             .height(300.dp)
                             .clip(RoundedCornerShape(28.dp))
-                            .background(SurfaceVariantColor),
-                        contentAlignment = Alignment.Center
+                            .background(SurfaceVariantColor)
                     ) {
+                        AsyncImage(
+                            model = slide.imageUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                        // A subtle ivory veil keeps the editorial typography readable
+                        // without hiding the fashion photography.
                         Box(
                             modifier = Modifier
-                                .size(112.dp)
+                                .fillMaxSize()
+                                .background(SurfaceVariantColor.copy(alpha = 0.16f))
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(16.dp)
+                                .size(34.dp)
                                 .clip(CircleShape)
-                                .background(WarmIvory),
+                                .background(WarmIvory.copy(alpha = 0.88f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = slide.icon,
                                 contentDescription = null,
                                 tint = DeepForest,
-                                modifier = Modifier.size(42.dp)
+                                modifier = Modifier.size(17.dp)
                             )
                         }
 

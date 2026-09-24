@@ -766,7 +766,14 @@ fun MeScreen(
                     if (currentPhoto != null) {
                         OutlinedButton(
                             onClick = {
-                                TryOnManager.selectedUserPhotoUri = null
+                                if (showingProfilePhoto) {
+                                    TryOnManager.clearProfilePhoto()
+                                } else {
+                                    val selectedIndex = TryOnManager.tryOnPhotos.indexOfFirst {
+                                        it.uri == TryOnManager.selectedUserPhotoUri
+                                    }
+                                    if (selectedIndex >= 0) TryOnManager.removeTryOnPhoto(selectedIndex)
+                                }
                                 showManagePhotosDialog = false
                             },
                             border = BorderStroke(1.dp, Color(0xFFB3261E).copy(alpha = 0.5f)),

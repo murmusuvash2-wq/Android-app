@@ -117,7 +117,7 @@ fun TryOnScreen(navController: NavController) {
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
             if (uri != null) {
-                TryOnManager.selectedUserPhotoUri = uri
+                TryOnManager.addTryOnPhoto(uri.toString())
             }
         }
     )
@@ -127,7 +127,7 @@ fun TryOnScreen(navController: NavController) {
         contract = ActivityResultContracts.TakePicture(),
         onResult = { success ->
             if (success && tempCameraUri != null) {
-                TryOnManager.selectedUserPhotoUri = tempCameraUri
+                TryOnManager.addTryOnPhoto(tempCameraUri.toString())
             }
             tempCameraUri = null
         }
@@ -282,13 +282,13 @@ fun TryOnScreen(navController: NavController) {
                         }
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "Add Your Photo",
+                            text = if (userPhotoUri == null) "Choose your photo" else "Change photo",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = PrimaryText
                         )
                         Text(
-                            text = "Full body or portrait",
+                            text = if (TryOnManager.tryOnPhotos.isEmpty()) "Choose from your saved Try-On photos or add a new one" else "${TryOnManager.tryOnPhotos.size}/5 saved photos",
                             fontSize = 11.sp,
                             color = SecondaryText,
                             textAlign = TextAlign.Center
@@ -394,50 +394,119 @@ fun TryOnScreen(navController: NavController) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp)
+                    .padding(horizontal = 20.dp, vertical = 18.dp)
                     .navigationBarsPadding()
             ) {
                 Text(
-                    text = "Select Photo Source",
-                    fontSize = 18.sp,
+                    text = "Choose your photo",
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = PrimaryText
                 )
+                Text(
+                    text = "Select one of your saved Try-On photos.",
+                    fontSize = 12.sp,
+                    color = SecondaryText
+                )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            showPhotoPickerSheet = false
-                            val uri = TryOnManager.createTempCameraUri(context)
-                            tempCameraUri = uri
-                            cameraLauncher.launch(uri)
+                if (TryOnManager.tryOnPhotos.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        TryOnManager.tryOnPhotos.forEach { photo ->
+                            val selected = TryOnManager.selectedUserPhotoUri == photo.uri
+                            Column(
+                                modifier = Modifier
+                                    .width(76.dp)
+                                    .clickable {
+                                        TryOnManager.selectTryOnPhoto(photo.uri)
+                                        showPhotoPickerSheet = false
+                                    },
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(76.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(SurfaceVariantColor)
+                                ) {
+                                    AsyncImage(
+                                        model = photo.uri,
+                                        contentDescription = photo.label,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                    if (selected) {
+                                        Box(
+                                            modifier = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .padding(5.dp)
+                                                .size(20.dp)
+                                                .clip(CircleShape)
+                                                .background(DeepForest),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(Icons.Default.Check, contentDescription = null, tint = SurfaceColor, modifier = Modifier.size(13.dp))
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(5.dp))
+                                Text(photo.label, fontSize = 10.sp, color = PrimaryText, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
                         }
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.CameraAlt, contentDescription = null, tint = DeepForest)
-                    Spacer(modifier = Modifier.size(16.dp))
-                    Text("Take Photo with Camera", fontSize = 15.sp, fontWeight = FontWeight.Medium, color = PrimaryText)
+                    }
                 }
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            showPhotoPickerSheet = false
-                            photoPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
+                Spacer(modifier = Modifier.height(14.dp))
+
+                if (TryOnManager.canAddTryOnPhoto()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showPhotoPickerSheet = false
+                                val uri = TryOnManager.createTempCameraUri(context)
+                                tempCameraUri = uri
+                                cameraLauncher.launch(uri)
+                            }
+                            .padding(vertical = 11.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.CameraAlt, contentDescription = null, tint = DeepForest)
+                        Spacer(modifier = Modifier.size(14.dp))
+                        Column {
+                            Text("Take a new photo", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = PrimaryText)
+                            Text("${TryOnManager.getTryOnPhotoCount()}/5 saved", fontSize = 11.sp, color = SecondaryText)
                         }
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = DeepForest)
-                    Spacer(modifier = Modifier.size(16.dp))
-                    Text("Choose from Gallery", fontSize = 15.sp, fontWeight = FontWeight.Medium, color = PrimaryText)
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showPhotoPickerSheet = false
+                                photoPickerLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                )
+                            }
+                            .padding(vertical = 11.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = DeepForest)
+                        Spacer(modifier = Modifier.size(14.dp))
+                        Text("Choose from Gallery", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = PrimaryText)
+                    }
+                } else {
+                    Text(
+                        text = "5 Try-On photos saved. Manage them from Profile.",
+                        fontSize = 12.sp,
+                        color = SecondaryText,
+                        modifier = Modifier.padding(vertical = 12.dp)
+                    )
                 }
             }
         }
